@@ -20,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CameraWatchManager {
     private static final Map<UUID, CameraSession> SESSIONS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Vec3d> lastCamPos = new ConcurrentHashMap<>();
-    private static int sendCounter = 0;
 
     private record CameraSession(UUID targetUuid, long startTick) {}
 
@@ -47,8 +45,6 @@ public class CameraWatchManager {
     }
 
     public static void tick(MinecraftServer server) {
-        sendCounter++;
-        if (sendCounter % 2 != 0) return; // 每 2 tick 发送一次
         for (Map.Entry<UUID, CameraSession> entry : SESSIONS.entrySet()) {
             ServerPlayerEntity viewer = server.getPlayerManager().getPlayer(entry.getKey());
             if (viewer == null) continue;
@@ -93,10 +89,7 @@ public class CameraWatchManager {
         } else {
             camPos = idealEnd;
         }
-        Vec3d rawCamPos = camPos;
-        Vec3d prevPos = lastCamPos.getOrDefault(viewer.getUuid(), camPos);
-        Vec3d smoothPos = prevPos.lerp(rawCamPos, 0.3); // 0.3 可调，值越小越平滑
-        lastCamPos.put(viewer.getUuid(), smoothPos);
+        // 不做服务端平滑，客户端负责全部插值，避免双层平滑振荡
         double dx = target.getX() - camPos.x;
         double dy = target.getEyeY() - camPos.y;
         double dz = target.getZ() - camPos.z;
@@ -105,18 +98,7 @@ public class CameraWatchManager {
         float pitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // yaw/pitch 基于原始位置计算（视线方向），位置使用平滑后坐标
-        float smoothYaw = yaw;
-        float smoothPitch = pitch;
-        double sdx = target.getX() - smoothPos.x;
-        double sdy = target.getEyeY() - smoothPos.y;
-        double sdz = target.getZ() - smoothPos.z;
-        smoothYaw = (float) (Math.toDegrees(Math.atan2(sdz, sdx)) - 90);
-        smoothYaw = MathHelper.wrapDegrees(smoothYaw);
-        smoothPitch = (float) (-Math.toDegrees(Math.atan2(sdy, Math.sqrt(sdx * sdx + sdz * sdz))));
-        smoothPitch = MathHelper.clamp(smoothPitch, -90, 90);
-
-        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(smoothPos, smoothYaw, smoothPitch));
+        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, yaw, pitch));
     }
 
     // 个性化偏移存储

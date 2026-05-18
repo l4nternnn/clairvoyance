@@ -17,16 +17,12 @@ public class CameraWatchClientHandler {
     private static Entity dummyCamera = null;
     private static Vec3d targetPos = null;
     private static float targetYaw = 0, targetPitch = 0;
-    private static long lastUpdateTime = 0;
     private static boolean hasValidTarget = false;
 
     public static void onCameraUpdate(Vec3d pos, float yaw, float pitch) {
-        // 拒绝原点坐标，防止闪回 (0,0,0)
-        if (pos.x == 0.0 && pos.y == 0.0 && pos.z == 0.0) return;
         targetPos = pos;
         targetYaw = yaw;
         targetPitch = pitch;
-        lastUpdateTime = System.currentTimeMillis();
         hasValidTarget = true;
     }
 
@@ -39,10 +35,10 @@ public class CameraWatchClientHandler {
 
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.world == null) return;
-            if (!hasValidTarget) return;
+            if (client.world == null || client.player == null) return;
+            if (!hasValidTarget || targetPos == null) return;
 
-            if (dummyCamera == null && targetPos != null) {
+            if (dummyCamera == null) {
                 dummyCamera = new Entity(EntityType.ARMOR_STAND, client.world) {
                     @Override protected void initDataTracker(DataTracker.Builder builder) {}
                     @Override public boolean damage(ServerWorld world, DamageSource source, float amount) { return false; }
@@ -56,29 +52,18 @@ public class CameraWatchClientHandler {
                 client.cameraEntity = dummyCamera;
                 return;
             }
-            if (dummyCamera == null) return;
 
-            // 平滑插值
-            long now = System.currentTimeMillis();
-            float expectedInterval = 100.0f;
-            float delta = Math.min(1.0f, (now - lastUpdateTime) / expectedInterval);
-            delta = Math.max(0.05f, delta);
+            // 固定步长平滑插值，避免双层平滑振荡
             Vec3d current = dummyCamera.getPos();
-            Vec3d newPos = current.lerp(targetPos, delta);
+            Vec3d newPos = current.lerp(targetPos, 0.25);
             dummyCamera.setPosition(newPos);
 
-            float maxStep = 15.0f;
-            float yawDiff = targetYaw - dummyCamera.getYaw();
-            yawDiff = MathHelper.clamp(yawDiff, -maxStep, maxStep);
-            yawDiff = (yawDiff % 360 + 360) % 360;
-            if (yawDiff > 180) yawDiff -= 360;
-            dummyCamera.setYaw(dummyCamera.getYaw() + yawDiff * delta);
+            float yawDiff = MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw());
+            dummyCamera.setYaw(dummyCamera.getYaw() + yawDiff * 0.25f);
 
-            float pitchDiff = targetPitch - dummyCamera.getPitch();
-            pitchDiff = MathHelper.clamp(pitchDiff, -180, 180);
-            dummyCamera.setPitch(dummyCamera.getPitch() + pitchDiff * delta);
+            float pitchDiff = MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180);
+            dummyCamera.setPitch(dummyCamera.getPitch() + pitchDiff * 0.25f);
 
-            // 防止 cameraEntity 被外部重置
             if (client.cameraEntity != dummyCamera) {
                 client.cameraEntity = dummyCamera;
             }
