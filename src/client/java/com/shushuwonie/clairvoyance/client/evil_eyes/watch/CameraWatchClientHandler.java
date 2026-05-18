@@ -11,6 +11,7 @@ import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+
 public class CameraWatchClientHandler {
 
     private static Entity dummyCamera = null;
@@ -20,6 +21,8 @@ public class CameraWatchClientHandler {
     private static boolean hasValidTarget = false;
 
     public static void onCameraUpdate(Vec3d pos, float yaw, float pitch) {
+        // 拒绝原点坐标，防止闪回 (0,0,0)
+        if (pos.x == 0.0 && pos.y == 0.0 && pos.z == 0.0) return;
         targetPos = pos;
         targetYaw = yaw;
         targetPitch = pitch;
@@ -30,7 +33,7 @@ public class CameraWatchClientHandler {
     public static void onUnbind() {
         dummyCamera = null;
         hasValidTarget = false;
-        targetPos = null;          // 避免残留坐标
+        targetPos = null;
         MinecraftClient.getInstance().cameraEntity = MinecraftClient.getInstance().player;
     }
 
@@ -39,7 +42,6 @@ public class CameraWatchClientHandler {
             if (client.world == null) return;
             if (!hasValidTarget) return;
 
-            // 确保虚拟相机存在
             if (dummyCamera == null && targetPos != null) {
                 dummyCamera = new Entity(EntityType.ARMOR_STAND, client.world) {
                     @Override protected void initDataTracker(DataTracker.Builder builder) {}
@@ -48,28 +50,26 @@ public class CameraWatchClientHandler {
                     @Override protected void writeCustomData(WriteView view) {}
                 };
                 dummyCamera.setInvisible(true);
-                // 直接置于目标位置，避免闪现原点
                 dummyCamera.setPosition(targetPos);
                 dummyCamera.setYaw(targetYaw);
                 dummyCamera.setPitch(targetPitch);
                 client.cameraEntity = dummyCamera;
-                return; // 本帧不需要插值
+                return;
             }
             if (dummyCamera == null) return;
 
-            // 平滑插值（保留原有逻辑）
+            // 平滑插值
             long now = System.currentTimeMillis();
-            float expectedInterval = 100.0f; // 2 tick ≈ 100ms
+            float expectedInterval = 100.0f;
             float delta = Math.min(1.0f, (now - lastUpdateTime) / expectedInterval);
-            delta = Math.max(0.1f, delta);
+            delta = Math.max(0.05f, delta);
             Vec3d current = dummyCamera.getPos();
             Vec3d newPos = current.lerp(targetPos, delta);
             dummyCamera.setPosition(newPos);
 
-
-            float maxStep = 10.0f; // 每 tick 最大变化 10 度
-            float yawDifftest = targetYaw - dummyCamera.getYaw();
-            float yawDiff = MathHelper.clamp(yawDifftest, -maxStep, maxStep);
+            float maxStep = 15.0f;
+            float yawDiff = targetYaw - dummyCamera.getYaw();
+            yawDiff = MathHelper.clamp(yawDiff, -maxStep, maxStep);
             yawDiff = (yawDiff % 360 + 360) % 360;
             if (yawDiff > 180) yawDiff -= 360;
             dummyCamera.setYaw(dummyCamera.getYaw() + yawDiff * delta);
@@ -77,6 +77,11 @@ public class CameraWatchClientHandler {
             float pitchDiff = targetPitch - dummyCamera.getPitch();
             pitchDiff = MathHelper.clamp(pitchDiff, -180, 180);
             dummyCamera.setPitch(dummyCamera.getPitch() + pitchDiff * delta);
+
+            // 防止 cameraEntity 被外部重置
+            if (client.cameraEntity != dummyCamera) {
+                client.cameraEntity = dummyCamera;
+            }
         });
     }
 }

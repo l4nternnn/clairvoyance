@@ -105,8 +105,18 @@ public class CameraWatchManager {
         float pitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
         pitch = MathHelper.clamp(pitch, -90, 90);
 
-        // 发送 CustomPayload 包（与客户端接收器匹配）
-        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, yaw, pitch));
+        // yaw/pitch 基于原始位置计算（视线方向），位置使用平滑后坐标
+        float smoothYaw = yaw;
+        float smoothPitch = pitch;
+        double sdx = target.getX() - smoothPos.x;
+        double sdy = target.getEyeY() - smoothPos.y;
+        double sdz = target.getZ() - smoothPos.z;
+        smoothYaw = (float) (Math.toDegrees(Math.atan2(sdz, sdx)) - 90);
+        smoothYaw = MathHelper.wrapDegrees(smoothYaw);
+        smoothPitch = (float) (-Math.toDegrees(Math.atan2(sdy, Math.sqrt(sdx * sdx + sdz * sdz))));
+        smoothPitch = MathHelper.clamp(smoothPitch, -90, 90);
+
+        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(smoothPos, smoothYaw, smoothPitch));
     }
 
     // 个性化偏移存储

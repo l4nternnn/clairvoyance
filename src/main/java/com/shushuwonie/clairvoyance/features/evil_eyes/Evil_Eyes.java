@@ -472,28 +472,6 @@ public class Evil_Eyes {
 
 
 
-            // 生成盔甲架后，为它注册死亡监听
-            ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
-                if (entity.getUuid().equals(standUuid)) {
-                    // 从映射中移除
-                    armorStandOwner.remove(standUuid);
-                    armorStandSpawnTick.remove(standUuid);
-                    // 减少玩家活跃计数
-//                    UUID ownerUuid = armorStandOwner.get(standUuid);
-                    if (ownerUuid != null) {
-                        configManager.removeActiveParrot(ownerUuid);
-                    }
-                    // 发送爆炸效果（需要获取 server）
-                    MinecraftServer server = entity.getServer();
-                    if (server != null) sendExplosionToNearbyPlayers(entity, server);
-                }
-            });
-            armorStandOwner.put(standUuid, ownerUuid);
-            armorStandSpawnTick.put(standUuid, world.getTime());
-
-            configManager.recordPlaceParrot(ownerUuid, stage);
-            player.sendMessage(Text.literal("§a锚点已放置"), true);
-            //            LOGGER.info("盔甲架 {} 已生成，存活: {}", standUuid, armorStand.isAlive());
         });
 
         // ==================== 盔甲架锚点扫描逻辑（增加视线检测） ====================
@@ -590,6 +568,20 @@ public class Evil_Eyes {
                     ServerPlayNetworking.send(player, new PlayerStageS2CPacket(stage));
                 }
             }
+        });
+
+        // 全局锚点死亡处理器（替代之前的逐个注册方式，避免监听器泄漏）
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (!(entity instanceof ArmorStandEntity)) return;
+            UUID standId = entity.getUuid();
+            if (!armorStandOwner.containsKey(standId)) return;
+            UUID ownerId = armorStandOwner.remove(standId);
+            armorStandSpawnTick.remove(standId);
+            if (ownerId != null) {
+                configManager.removeActiveParrot(ownerId);
+            }
+            MinecraftServer server = entity.getServer();
+            if (server != null) sendExplosionToNearbyPlayers(entity, server);
         });
     }
 

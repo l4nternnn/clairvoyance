@@ -20,9 +20,7 @@ import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;
 import com.shushuwonie.clairvoyance.network.openback.CarryEntityPayload;
 import com.shushuwonie.clairvoyance.network.openback.OpenOtherInventoryPayload;
 import com.shushuwonie.clairvoyance.network.openback.PlaceCarriedEntityPayload;
-import com.shushuwonie.clairvoyance.network.camerawatch.CameraWatchBindS2CPacket;
-import com.shushuwonie.clairvoyance.network.camerawatch.CameraWatchUnbindS2CPacket;
-import com.shushuwonie.clairvoyance.network.camerawatch.CameraUpdateS2CPacket;
+
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -100,8 +98,6 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		// 初始化其他模块
 		com.shushuwonie.client.evil_eyes.Evil_EyesClient.initialize();
 		com.shushuwonie.client.gazeguidance.GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
-		CameraWatchClientHandler.initialize();
-
 		// 按键绑定
 		configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_U, "category.clairvoyance"));
 		markKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.mark", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_V, "category.clairvoyance"));
@@ -320,35 +316,6 @@ public class ClairvoyanceClient implements ClientModInitializer {
 			});
 		});
 
-		// 16. 新系统相机绑定（保留，但新系统实际未使用）
-		ClientPlayNetworking.registerGlobalReceiver(CameraWatchBindS2CPacket.ID, (packet, context) -> {
-			context.client().execute(() -> {
-				MinecraftClient client = context.client();
-				if (client.world == null) return;
-				Entity camera = client.world.getEntityById(packet.entityId());
-				if (camera != null) {
-					client.cameraEntity = camera;
-					if (client.player != null) client.player.sendMessage(Text.literal("§a[旧]相机已绑定"), true);
-				}
-			});
-		});
-
-		// 17. 新系统解绑
-		ClientPlayNetworking.registerGlobalReceiver(CameraWatchUnbindS2CPacket.ID, (packet, context) -> {
-			context.client().execute(() -> {
-				MinecraftClient client = context.client();
-				client.cameraEntity = client.player;
-				if (client.player != null) client.player.sendMessage(Text.literal("§a[旧]已退出观看"), true);
-			});
-		});
-
-		// 18. 新系统相机更新（旧版，不使用）
-		ClientPlayNetworking.registerGlobalReceiver(CameraUpdateS2CPacket.ID, (packet, context) -> {
-			context.client().execute(() -> CameraWatchClientHandler.onCameraUpdate(packet.pos(), packet.yaw(), packet.pitch()));
-		});
-
-
-
 		ClientCameraWatchReceiver.register();   // 注册网络接收
 		CameraWatchClientHandler.initialize();  // 注册 tick 事件
 
@@ -467,7 +434,14 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		Vec3d playerChest = client.player.getEyePos();
 		double offsetX = 0.0, offsetY = -0.4, offsetZ = 0.0;
-		for (AnchorInfo info : anchors.values()) {
+		Iterator<Map.Entry<UUID, AnchorInfo>> it = anchors.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<UUID, AnchorInfo> entry = it.next();
+			if (client.world.getEntity(entry.getKey()) == null) {
+				it.remove();
+				continue;
+			}
+			AnchorInfo info = entry.getValue();
 			Vec3d armorStandPos = info.pos;
 			Vec3d center = armorStandPos.add(offsetX, offsetY, offsetZ);
 			Vec3d dir = playerChest.subtract(center).normalize();

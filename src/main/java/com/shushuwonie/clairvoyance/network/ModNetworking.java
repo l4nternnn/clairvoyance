@@ -13,7 +13,6 @@ public class ModNetworking {
         OpenUIPacket.register();
         EntityMarkedPayload.register();
         ToggleImagesS2CPacket.register();
-        SelectViewPayload.register();
         ForceExitViewPayload.register();
         MarkParticleS2CPacket.register();
         SyncConfigS2CPacket.register();
