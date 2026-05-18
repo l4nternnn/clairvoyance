@@ -46,23 +46,24 @@ public class CameraWatchClientHandler {
                     @Override protected void writeCustomData(WriteView view) {}
                 };
                 dummyCamera.setInvisible(true);
-                dummyCamera.setPosition(targetPos);
-                dummyCamera.setYaw(targetYaw);
-                dummyCamera.setPitch(targetPitch);
+                // refreshPositionAndAngles 同时设置 prevX/Y/Z，避免 getLerpedPos 在 (0,0,0) 和当前位置之间插值
+                dummyCamera.refreshPositionAndAngles(targetPos.x, targetPos.y, targetPos.z, targetYaw, targetPitch);
                 client.cameraEntity = dummyCamera;
                 return;
             }
 
-            // 固定步长平滑插值，避免双层平滑振荡
+            // 固定步长平滑
             Vec3d current = dummyCamera.getPos();
-            Vec3d newPos = current.lerp(targetPos, 0.25);
-            dummyCamera.setPosition(newPos);
+            Vec3d newPosXZ = new Vec3d(
+                    MathHelper.lerp(0.3, current.x, targetPos.x),
+                    MathHelper.lerp(0.3, current.y, targetPos.y),
+                    MathHelper.lerp(0.3, current.z, targetPos.z)
+            );
+            float newYaw = dummyCamera.getYaw() + MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw()) * 0.3f;
+            float newPitch = dummyCamera.getPitch() + MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180) * 0.3f;
 
-            float yawDiff = MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw());
-            dummyCamera.setYaw(dummyCamera.getYaw() + yawDiff * 0.25f);
-
-            float pitchDiff = MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180);
-            dummyCamera.setPitch(dummyCamera.getPitch() + pitchDiff * 0.25f);
+            // 使用 refreshPositionAndAngles 确保 prev 坐标同步，消除渲染抖动
+            dummyCamera.refreshPositionAndAngles(newPosXZ.x, newPosXZ.y, newPosXZ.z, newYaw, newPitch);
 
             if (client.cameraEntity != dummyCamera) {
                 client.cameraEntity = dummyCamera;
