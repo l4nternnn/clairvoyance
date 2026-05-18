@@ -1,0 +1,41 @@
+{
+	"schemaVersion": 1,
+	"id": "clairvoyance",
+	"version": "${version}",
+	"name": "魔法优化ing",
+	"description": "魔溃专属喵，不要盗用喵！ 更新日志:当前更新了打开背包,抬起实体",
+	"authors": [
+		"鼠鼠◆我捏"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/clairvoyance/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.shushuwonie.clairvoyance.Clairvoyance"
+		],
+		"client": [
+			"com.shushuwonie.clairvoyance.client.ClairvoyanceClient"
+		],
+		"fabric-datagen": [
+			"com.shushuwonie.clairvoyance.client.ClairvoyanceDataGenerator"
+		]
+	},
+	"mixins": [
+		"clairvoyance.mixins.json",
+		{
+			"config": "clairvoyance.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.3",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

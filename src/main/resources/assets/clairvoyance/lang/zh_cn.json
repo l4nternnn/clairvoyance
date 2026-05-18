@@ -1,0 +1,15 @@
+{
+  "item.clairvoyance.clairvoyance_item": "|魔法:§4千里眼§r|",
+  "category.clairvoyance": "千里眼",
+  "key.clairvoyance.mark": "标记实体 (G)",
+  "key.clairvoyance.config": "打开配置 (L)",
+  "key.clairvoyance.use": "使用物品",
+
+
+  "item.clairvoyance.magic_stick": "|魔法:§6视线诱导§r|",
+  "key.gazeguidance.magic": "标记实体",
+  "key.gazeguidance.stage_config": "打开注入界面",
+  "category.gazeguidance": "视线诱导"
+
+
+}
