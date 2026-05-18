@@ -1,10 +1,9 @@
 # 千里眼 Clairvoyance
 
-[![Build](https://github.com/l4nternnn/clairvoyance/actions/workflows/build.yml/badge.svg)](https://github.com/l4nternnn/clairvoyance/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/l4nternnn/clairvoyance)](https://github.com/l4nternnn/clairvoyance/releases)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.8-brightgreen)](https://www.minecraft.net/)
 [![Loader](https://img.shields.io/badge/Fabric-0.18.3-blue)](https://fabricmc.net/)
 [![License](https://img.shields.io/badge/License-CC0--1.0-lightgrey)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/l4nternnn/clairvoyance)](https://github.com/l4nternnn/clairvoyance/releases)
 
 Minecraft 1.21.8 Fabric 模组，为服务器管理提供多种辅助功能。
 
