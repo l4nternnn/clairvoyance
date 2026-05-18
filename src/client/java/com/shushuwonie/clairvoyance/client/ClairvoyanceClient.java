@@ -121,6 +121,13 @@ public class ClairvoyanceClient implements ClientModInitializer {
 					return;
 				}
 				if (mainHand.getItem() == Evil_Eyes.CLAIRVOYANCE_ITEM) {
+					// 先检查是否对准实体 -> 手动标记
+					Entity entityTarget = getTargetEntity(client, 50.0);
+					if (entityTarget instanceof LivingEntity) {
+						ClientPlayNetworking.send(new MarkEntityPayload(entityTarget.getId()));
+						return;
+					}
+					// 再检查是否对准方块 -> 放置锚点
 					HitResult hit = client.player.raycast(50.0, 0.0f, false);
 					if (hit.getType() == HitResult.Type.BLOCK) {
 						BlockHitResult blockHit = (BlockHitResult) hit;
@@ -129,7 +136,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 						for (int i = 0; i < 30; i++)
 							client.particleManager.addParticle(ParticleTypes.ENCHANT, pos.x, pos.y, pos.z, 0, 0.5, 0);
 					} else {
-						client.player.sendMessage(Text.literal("§c请对准一个方块表面"), true);
+						client.player.sendMessage(Text.literal("§c请对准实体或方块表面"), true);
 					}
 				} else if (mainHand.getItem() == ModItems.MAGIC_STICK) {
 					Entity target = getTargetEntity(client, 50.0);
@@ -210,7 +217,10 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 6. 强制退出观看（旧系统）
 		ClientPlayNetworking.registerGlobalReceiver(ForceExitViewPayload.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.client.evil_eyes.Evil_EyesClient.exitViewMode(context.client()));
+			context.client().execute(() -> {
+				CameraWatchClientHandler.onUnbind();
+				com.shushuwonie.client.evil_eyes.Evil_EyesClient.exitViewMode(context.client());
+			});
 		});
 
 		// 7. 标记粒子效果

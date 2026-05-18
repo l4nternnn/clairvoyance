@@ -1,6 +1,7 @@
 package com.shushuwonie.clairvoyance.features.evil_eyes;
 
 import com.shushuwonie.clairvoyance.config.GlobalConfigManager;
+import com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager;
 import com.shushuwonie.clairvoyance.item.evil_eyes.ClairvoyanceItem;
 import com.shushuwonie.clairvoyance.network.clairvoyance.*;
 //import com.shushuwonie.client.network.clairvoyance.*;
@@ -305,6 +306,7 @@ public class Evil_Eyes {
                         info.counted = true;
                     }
                     // 无论是否已扣除，只要达到时长就强制退出观看
+                    CameraWatchManager.stopWatching(player, server);
                     ServerPlayNetworking.send(player, new ForceExitViewPayload());
                     watchingPlayers.remove(playerUuid);
                     player.sendMessage(Text.literal("§8头昏脑胀，看来只能看到这了"), true);
@@ -316,6 +318,7 @@ public class Evil_Eyes {
         ServerPlayNetworking.registerGlobalReceiver(ExitViewPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             playerMarkedEntities.remove(player.getUuid());
+            CameraWatchManager.stopWatching(player, player.getServer());
             ServerPlayNetworking.send(player, new ForceExitViewPayload());
             player.sendMessage(Text.literal("§e已退出观看"), true);
         });
@@ -336,7 +339,8 @@ public class Evil_Eyes {
             }
             watchingPlayers.remove(player.getUuid());
             watchingPlayers.put(player.getUuid(), new WatchingInfo(selected, player.getWorld().getTime()));
-//            ServerPlayNetworking.send(player, new SelectViewPayload(selected));
+            // 启动新相机系统，实现真正的视角跟随
+            CameraWatchManager.startWatching(player, selected, player.getServer());
         });
 
         // 5. 受伤退出
@@ -344,6 +348,7 @@ public class Evil_Eyes {
             if (entity instanceof ServerPlayerEntity player) {
                 if (playerMarkedEntities.containsKey(player.getUuid())) {
                     playerMarkedEntities.remove(player.getUuid());
+                    CameraWatchManager.stopWatching(player, player.getServer());
                     ServerPlayNetworking.send(player, new ForceExitViewPayload());
                     player.sendMessage(Text.literal("§c受到攻击，观看中断"), true);
                 }
