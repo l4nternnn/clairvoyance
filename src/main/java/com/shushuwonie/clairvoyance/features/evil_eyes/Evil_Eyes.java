@@ -96,12 +96,12 @@ public class Evil_Eyes {
     private static final UUID CLEAR_SIGNAL = new UUID(0, 0);
 
     private static void sendMarkedListToClient(ServerPlayerEntity player, Map<UUID, Long> marks, int maxDisplayCount) {
-        // 先发清空信号，客户端收到后清空本地列表
         ServerPlayNetworking.send(player, new EntityMarkedPayload(CLEAR_SIGNAL, ""));
-        // 发送全部标记实体
         for (Map.Entry<UUID, Long> entry : marks.entrySet()) {
             UUID uuid = entry.getKey();
             Entity e = player.getWorld().getEntity(uuid);
+            // 过滤锚点盔甲架
+            if (isAnchorStand(e)) continue;
             String name = (e != null) ? e.getName().getString() : "未知";
             ServerPlayNetworking.send(player, new EntityMarkedPayload(uuid, name));
         }
@@ -110,6 +110,12 @@ public class Evil_Eyes {
     private static int getCurrentMarkCount(UUID playerUuid) {
         Map<UUID, Long> marks = playerMarkedEntities.get(playerUuid);
         return marks == null ? 0 : marks.size();
+    }
+
+    private static boolean isAnchorStand(Entity e) {
+        if (!(e instanceof ArmorStandEntity as)) return false;
+        Text name = as.getCustomName();
+        return name != null && "clairvoyance_evil_eyes".equals(name.getString());
     }
 
     public static int getPlayerStage(ServerPlayerEntity player, GlobalConfigManager mgr) {
@@ -422,7 +428,8 @@ public class Evil_Eyes {
                 Map<UUID, Long> marks = playerMarkedEntities.computeIfAbsent(player.getUuid(), k -> new ConcurrentHashMap<>());
                 double range = 30.0;
                 Box searchBox = player.getBoundingBox().expand(range);
-                for (Entity entity : world.getOtherEntities(player, searchBox, e -> e instanceof LivingEntity && e.isAlive())) {
+                for (Entity entity : world.getOtherEntities(player, searchBox, e ->
+                        e instanceof LivingEntity && e.isAlive() && !isAnchorStand(e))) {
                     if (marks.containsKey(entity.getUuid())) continue;
                     if (recentlyUnmarked.getOrDefault(entity.getUuid(), 0L) > world.getTime()) continue;
                     if (marks.size() >= maxMarks) continue;
@@ -564,7 +571,8 @@ public class Evil_Eyes {
 
                 double range = 30.0;
                 Box searchBox = stand.getBoundingBox().expand(range);
-                List<LivingEntity> nearby = world.getEntitiesByClass(LivingEntity.class, searchBox, e -> e.isAlive() && e != owner && e != stand);
+                List<LivingEntity> nearby = world.getEntitiesByClass(LivingEntity.class, searchBox,
+                        e -> e.isAlive() && e != owner && e != stand && !isAnchorStand(e));
 
                 for (LivingEntity living : nearby) {
                     if (marks.containsKey(living.getUuid())) continue;
