@@ -77,15 +77,14 @@ public class CameraWatchManager {
         float smoothYaw = prevSmoothYaw + MathHelper.wrapDegrees(targetYaw - prevSmoothYaw) * lerpFactor;
         smoothYaws.put(viewerId, smoothYaw);
 
-        // 摄像机位置：实体背后水平方向 * 距离 + 固定高度偏移
+        // 实体视线方向: (-sin(yaw), 0, cos(yaw))，背后=反方向=(sin(yaw), 0, -cos(yaw))
         Vec3d targetEye = target.getEyePos();
         double radYaw = Math.toRadians(smoothYaw);
-        double behindX = -Math.sin(radYaw);   // lookDir.x 的反方向
-        double behindZ = -Math.cos(radYaw);   // lookDir.z 的反方向
-        Vec3d posBase = target.getPos().add(-behindX * distance, 1.5, -behindZ * distance);
-        Vec3d idealEnd = posBase;
+        double bx = Math.sin(radYaw);
+        double bz = -Math.cos(radYaw);
+        Vec3d idealEnd = target.getPos().add(bx * distance, 1.5, bz * distance);
 
-        // 射线检测（从实体位置到摄像机位置）
+        // 射线检测（从实体眼睛到摄像机位置）
         RaycastContext ctx = new RaycastContext(targetEye, idealEnd,
                 RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, target);
@@ -94,7 +93,7 @@ public class CameraWatchManager {
         if (hit.getType() == HitResult.Type.BLOCK) {
             double hitDist = hit.getPos().distanceTo(targetEye);
             double finalDist = Math.max(0.5, Math.min(distance, hitDist - 0.2));
-            camPos = target.getPos().add(-behindX * finalDist, 1.5, -behindZ * finalDist);
+            camPos = target.getPos().add(bx * finalDist, 1.5, bz * finalDist);
         } else {
             camPos = idealEnd;
         }
