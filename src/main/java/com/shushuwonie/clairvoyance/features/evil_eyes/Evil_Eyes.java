@@ -156,6 +156,11 @@ public class Evil_Eyes {
         return watchingPlayers.containsKey(player.getUuid());
     }
 
+    public static void forceStopWatching(ServerPlayerEntity player, MinecraftServer server) {
+        watchingPlayers.remove(player.getUuid());
+        ServerPlayNetworking.send(player, new ForceExitViewPayload());
+    }
+
     /**
      * 清除指定玩家的所有锚点盔甲架
      * @param playerUuid 玩家 UUID

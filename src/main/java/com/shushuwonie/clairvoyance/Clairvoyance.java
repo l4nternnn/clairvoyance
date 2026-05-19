@@ -169,6 +169,7 @@ public class Clairvoyance implements ModInitializer {
 			ServerPlayerEntity player = context.player();
 			MinecraftServer server = player.getServer();
 			CameraWatchManager.stopWatching(player, server);
+			Evil_Eyes.forceStopWatching(player, server);
 		});
 
 
