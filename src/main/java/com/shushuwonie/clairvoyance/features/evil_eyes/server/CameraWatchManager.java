@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CameraWatchManager {
     private static final Map<UUID, CameraSession> SESSIONS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Float> smoothYaws = new ConcurrentHashMap<>();
+    private static final Map<UUID, Float> smoothPitches = new ConcurrentHashMap<>();
 
     private record CameraSession(UUID targetUuid, long startTick) {}
 
@@ -40,7 +42,10 @@ public class CameraWatchManager {
     }
 
     public static void stopWatching(ServerPlayerEntity viewer, MinecraftServer server) {
-        SESSIONS.remove(viewer.getUuid());
+        UUID uuid = viewer.getUuid();
+        SESSIONS.remove(uuid);
+        smoothYaws.remove(uuid);
+        smoothPitches.remove(uuid);
         ServerPlayNetworking.send(viewer, new CameraWatchUnbindS2CPacket());
     }
 
@@ -66,10 +71,28 @@ public class CameraWatchManager {
         CameraOffset offset = getOffset(viewer);
         double distance = offset.distance;
 
-        // 基于实体实际视线方向计算摄像机位置，而非固定世界坐标偏移
+        // 对实体 yaw/pitch 做平滑，防止微小抖动导致摄像机绕圈
+        UUID viewerId = viewer.getUuid();
+        float targetYaw = target.getYaw();
+        float targetPitch = target.getPitch();
+        float prevSmoothYaw = smoothYaws.getOrDefault(viewerId, targetYaw);
+        float prevSmoothPitch = smoothPitches.getOrDefault(viewerId, targetPitch);
+        float lerpFactor = 0.2f;
+        float smoothYaw = prevSmoothYaw + MathHelper.wrapDegrees(targetYaw - prevSmoothYaw) * lerpFactor;
+        float smoothPitch = prevSmoothPitch + MathHelper.clamp(targetPitch - prevSmoothPitch, -180, 180) * lerpFactor;
+        smoothYaws.put(viewerId, smoothYaw);
+        smoothPitches.put(viewerId, smoothPitch);
+
+        // 基于平滑后的方向计算摄像机位置
         Vec3d targetEye = target.getEyePos();
-        Vec3d lookDir = target.getRotationVec(1.0f);
-        Vec3d behindDir = lookDir.multiply(-1); // 实体背后方向
+        double radYaw = Math.toRadians(smoothYaw);
+        double radPitch = Math.toRadians(smoothPitch);
+        Vec3d lookDir = new Vec3d(
+                -Math.sin(radYaw) * Math.cos(radPitch),
+                -Math.sin(radPitch),
+                Math.cos(radYaw) * Math.cos(radPitch)
+        ).normalize();
+        Vec3d behindDir = lookDir.multiply(-1);
         Vec3d idealEnd = targetEye.add(behindDir.multiply(distance));
 
         RaycastContext ctx = new RaycastContext(targetEye, idealEnd,
@@ -85,11 +108,8 @@ public class CameraWatchManager {
             camPos = idealEnd;
         }
 
-        // 摄像机方向与被观看实体视线方向一致
-        float yaw = target.getYaw();
-        float pitch = target.getPitch();
-
-        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, yaw, pitch));
+        // 摄像机朝向与平滑后视线一致
+        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, smoothYaw, smoothPitch));
     }
 
     // 个性化偏移存储
