@@ -121,15 +121,28 @@ public class ClairvoyanceClient implements ClientModInitializer {
 					return;
 				}
 				if (mainHand.getItem() == Evil_Eyes.CLAIRVOYANCE_ITEM) {
-					// 先检查是否对准实体 -> 手动标记
-					Entity entityTarget = getTargetEntity(client, 50.0);
-					if (entityTarget instanceof LivingEntity) {
-						ClientPlayNetworking.send(new MarkEntityPayload(entityTarget.getId()));
-						return;
-					}
-					// 再检查是否对准方块 -> 放置锚点
+					// 同时检测实体和方块射线，取近的
+					Vec3d eye = client.player.getEyePos();
+					Vec3d look = client.player.getRotationVec(1.0f);
+					Vec3d end = eye.add(look.multiply(50.0));
+					double blockDist = 50.0;
+					double entityDist = 50.0;
+					Entity entityTarget = null;
 					HitResult hit = client.player.raycast(50.0, 0.0f, false);
 					if (hit.getType() == HitResult.Type.BLOCK) {
+						blockDist = hit.getPos().distanceTo(eye);
+					}
+					for (Entity e : client.world.getEntities()) {
+						if (!(e instanceof LivingEntity) || e == client.player) continue;
+						var boxHit = e.getBoundingBox().raycast(eye, end);
+						if (boxHit.isPresent()) {
+							double d = eye.distanceTo(boxHit.get());
+							if (d < entityDist) { entityDist = d; entityTarget = e; }
+						}
+					}
+					if (entityTarget != null && entityDist <= blockDist) {
+						ClientPlayNetworking.send(new MarkEntityPayload(entityTarget.getId()));
+					} else if (hit.getType() == HitResult.Type.BLOCK) {
 						BlockHitResult blockHit = (BlockHitResult) hit;
 						Vec3d pos = blockHit.getPos().add(0, 2.2, 0);
 						ClientPlayNetworking.send(new PlaceParrotC2SPacket(pos));
