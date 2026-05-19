@@ -108,8 +108,16 @@ public class CameraWatchManager {
             camPos = idealEnd;
         }
 
-        // 摄像机朝向与平滑后视线一致
-        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, smoothYaw, smoothPitch));
+        // 摄像机始终看向实体
+        double dx = targetEye.x - camPos.x;
+        double dy = targetEye.y - camPos.y;
+        double dz = targetEye.z - camPos.z;
+        float camYaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90);
+        camYaw = MathHelper.wrapDegrees(camYaw);
+        float camPitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
+        camPitch = MathHelper.clamp(camPitch, -90, 90);
+
+        ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, camYaw, camPitch));
     }
 
     // 个性化偏移存储
