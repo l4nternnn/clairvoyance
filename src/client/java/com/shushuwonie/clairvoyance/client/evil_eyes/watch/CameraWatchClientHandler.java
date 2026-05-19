@@ -20,23 +20,21 @@ public class CameraWatchClientHandler {
     private static Vec3d targetPos = null;
     private static float targetYaw = 0, targetPitch = 0;
     private static boolean hasValidTarget = false;
-
-    private static Field prevXField, prevYField, prevZField, prevYawField, prevPitchField;
+    private static boolean reflectOk = false;
+    private static Field px, py, pz, pyw, pp;
 
     static {
-        try {
-            prevXField = Entity.class.getDeclaredField("prevX");
-            prevYField = Entity.class.getDeclaredField("prevY");
-            prevZField = Entity.class.getDeclaredField("prevZ");
-            prevYawField = Entity.class.getDeclaredField("prevYaw");
-            prevPitchField = Entity.class.getDeclaredField("prevPitch");
-            prevXField.setAccessible(true);
-            prevYField.setAccessible(true);
-            prevZField.setAccessible(true);
-            prevYawField.setAccessible(true);
-            prevPitchField.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            // 字段名可能不同，静默处理
+        for (Field f : Entity.class.getDeclaredFields()) {
+            String n = f.getName();
+            if (!reflectOk && n.endsWith("prevX")) { px = f; px.setAccessible(true); }
+            if (!reflectOk && n.endsWith("prevY")) { py = f; py.setAccessible(true); }
+            if (!reflectOk && n.endsWith("prevZ")) { pz = f; pz.setAccessible(true); }
+            if (!reflectOk && n.endsWith("prevYaw")) { pyw = f; pyw.setAccessible(true); }
+            if (!reflectOk && n.endsWith("prevPitch")) { pp = f; pp.setAccessible(true); }
+            if (px != null && py != null && pz != null && pyw != null && pp != null) {
+                reflectOk = true;
+                break;
+            }
         }
     }
 
@@ -72,39 +70,28 @@ public class CameraWatchClientHandler {
                 return;
             }
 
-            // 保存当前值作为新的 prev，让 Minecraft 的 getLerpedPos 做帧间插值
-            double oldX = dummyCamera.getX();
-            double oldY = dummyCamera.getY();
-            double oldZ = dummyCamera.getZ();
-            float oldYaw = dummyCamera.getYaw();
-            float oldPitch = dummyCamera.getPitch();
-
-            // 计算新位置（高响应 lerp）
             Vec3d current = dummyCamera.getPos();
             double nx = current.x + (targetPos.x - current.x) * 0.7;
             double ny = current.y + (targetPos.y - current.y) * 0.7;
             double nz = current.z + (targetPos.z - current.z) * 0.7;
-            float nyaw = oldYaw + MathHelper.wrapDegrees(targetYaw - oldYaw) * 0.6f;
-            float npitch = oldPitch + MathHelper.clamp(targetPitch - oldPitch, -180, 180) * 0.6f;
+            float nyaw = dummyCamera.getYaw() + MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw()) * 0.6f;
+            float npitch = dummyCamera.getPitch() + MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180) * 0.6f;
 
-            // 只设当前值，通过反射设 prev 为旧值
-            dummyCamera.setPos(nx, ny, nz);
-            dummyCamera.setYaw(nyaw);
-            dummyCamera.setPitch(npitch);
-            setPrev(oldX, oldY, oldZ, oldYaw, oldPitch);
+            if (reflectOk) {
+                double ox = dummyCamera.getX(), oy = dummyCamera.getY(), oz = dummyCamera.getZ();
+                float oyaw = dummyCamera.getYaw(), opitch = dummyCamera.getPitch();
+                dummyCamera.setPos(nx, ny, nz);
+                dummyCamera.setYaw(nyaw);
+                dummyCamera.setPitch(npitch);
+                try { px.setDouble(dummyCamera, ox); py.setDouble(dummyCamera, oy); pz.setDouble(dummyCamera, oz); } catch (Exception ignored) {}
+                try { pyw.setFloat(dummyCamera, oyaw); pp.setFloat(dummyCamera, opitch); } catch (Exception ignored) {}
+            } else {
+                dummyCamera.refreshPositionAndAngles(nx, ny, nz, nyaw, npitch);
+            }
 
             if (client.cameraEntity != dummyCamera) {
                 client.cameraEntity = dummyCamera;
             }
         });
-    }
-
-    private static void setPrev(double x, double y, double z, float yaw, float pitch) {
-        try {
-            if (prevXField != null) { prevXField.setDouble(dummyCamera, x); prevYField.setDouble(dummyCamera, y); prevZField.setDouble(dummyCamera, z); }
-        } catch (Exception ignored) {}
-        try {
-            if (prevYawField != null) { prevYawField.setFloat(dummyCamera, yaw); prevPitchField.setFloat(dummyCamera, pitch); }
-        } catch (Exception ignored) {}
     }
 }
