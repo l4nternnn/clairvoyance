@@ -63,19 +63,14 @@ public class CameraWatchManager {
             return;
         }
 
-        // 获取个性化偏移
         CameraOffset offset = getOffset(viewer);
         double distance = offset.distance;
-        float yawOffset = offset.yaw;
-        float pitchOffset = offset.pitch;
 
+        // 基于实体实际视线方向计算摄像机位置，而非固定世界坐标偏移
         Vec3d targetEye = target.getEyePos();
-        Vec3d idealDir = new Vec3d(
-                Math.sin(Math.toRadians(-yawOffset)) * Math.cos(Math.toRadians(pitchOffset)),
-                Math.sin(Math.toRadians(pitchOffset)),
-                Math.cos(Math.toRadians(-yawOffset)) * Math.cos(Math.toRadians(pitchOffset))
-        ).normalize();
-        Vec3d idealEnd = targetEye.add(idealDir.multiply(distance));
+        Vec3d lookDir = target.getRotationVec(1.0f);
+        Vec3d behindDir = lookDir.multiply(-1); // 实体背后方向
+        Vec3d idealEnd = targetEye.add(behindDir.multiply(distance));
 
         RaycastContext ctx = new RaycastContext(targetEye, idealEnd,
                 RaycastContext.ShapeType.COLLIDER,
@@ -85,18 +80,14 @@ public class CameraWatchManager {
         if (hit.getType() == HitResult.Type.BLOCK) {
             double hitDistance = hit.getPos().distanceTo(targetEye);
             double finalDistance = Math.max(0.5, Math.min(distance, hitDistance - 0.2));
-            camPos = targetEye.add(idealDir.multiply(finalDistance));
+            camPos = targetEye.add(behindDir.multiply(finalDistance));
         } else {
             camPos = idealEnd;
         }
-        // 不做服务端平滑，客户端负责全部插值，避免双层平滑振荡
-        double dx = target.getX() - camPos.x;
-        double dy = target.getEyeY() - camPos.y;
-        double dz = target.getZ() - camPos.z;
-        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90);
-        yaw = MathHelper.wrapDegrees(yaw);
-        float pitch = (float) (-Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
-        pitch = MathHelper.clamp(pitch, -90, 90);
+
+        // 摄像机方向与被观看实体视线方向一致
+        float yaw = target.getYaw();
+        float pitch = target.getPitch();
 
         ServerPlayNetworking.send(viewer, new CameraUpdateS2CPacket(camPos, yaw, pitch));
     }
@@ -126,6 +117,6 @@ public class CameraWatchManager {
 
     private static CameraOffset getOffset(ServerPlayerEntity player) {
         return PLAYER_OFFSETS.getOrDefault(player.getUuid(),
-                new CameraOffset(180.0f, 10.0f, 4.0f)); // 默认背后跟随
+                new CameraOffset(0f, 0f, 4.0f)); // 默认背后4格，方向随实体视线
     }
 }
