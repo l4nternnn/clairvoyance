@@ -328,7 +328,7 @@ public class Evil_Eyes {
             player.sendMessage(Text.literal("§e已退出观看"), true);
         });
 
-        // 4. 选择观看实体
+        // 4. 选择观看实体（需在锚点30格范围内）
         ServerPlayNetworking.registerGlobalReceiver(SelectViewPayload.ID, (payload, context) -> {
             ServerPlayerEntity player = context.player();
             UUID selected = payload.entityUuid();
@@ -337,6 +337,23 @@ public class Evil_Eyes {
             Long expire = marks.get(selected);
             if (expire == null || expire <= player.getWorld().getTime()) return;
 
+            // 检查被观看实体是否在任意锚点30格内
+            Entity targetEntity = player.getWorld().getEntity(selected);
+            if (targetEntity == null) return;
+            boolean nearAnchor = false;
+            for (Map.Entry<UUID, UUID> entry : armorStandOwner.entrySet()) {
+                if (!entry.getValue().equals(player.getUuid())) continue;
+                Entity anchor = player.getWorld().getEntity(entry.getKey());
+                if (anchor != null && anchor.isAlive() && targetEntity.squaredDistanceTo(anchor) < 30 * 30) {
+                    nearAnchor = true;
+                    break;
+                }
+            }
+            if (!nearAnchor) {
+                player.sendMessage(Text.literal("§c目标不在任何锚点30格范围内"), true);
+                return;
+            }
+
             int stage = getPlayerStage(player, configManager);
             if (!configManager.canMark(player.getUuid(), stage)) {
                 player.sendMessage(Text.literal("§c今日观看次数已达上限"), true);
@@ -344,7 +361,6 @@ public class Evil_Eyes {
             }
             watchingPlayers.remove(player.getUuid());
             watchingPlayers.put(player.getUuid(), new WatchingInfo(selected, player.getWorld().getTime()));
-            // 启动新相机系统，实现真正的视角跟随
             CameraWatchManager.startWatching(player, selected, player.getServer());
         });
 
