@@ -37,6 +37,10 @@ CLAUDE.md
 
 run/
 
+# bugfix list
+
+bugfix-list.txt
+
 # java
 
 hs_err_*.log
