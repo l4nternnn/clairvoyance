@@ -3,12 +3,10 @@ package com.shushuwonie.clairvoyance.client.gui;
 import com.shushuwonie.clairvoyance.item.config.GazeConfig;
 import com.shushuwonie.clairvoyance.network.clairvoyance.GlobalConfigS2CPacket;
 import com.shushuwonie.clairvoyance.network.clairvoyance.RequestGlobalConfigC2SPacket;
-import com.shushuwonie.clairvoyance.network.clairvoyance.SelectViewPayload;
 import com.shushuwonie.clairvoyance.network.clairvoyance.UpdateGlobalConfigC2SPacket;
 import com.shushuwonie.clairvoyance.network.gazeguidance.RequestConfigC2SPacket;
 import com.shushuwonie.clairvoyance.network.gazeguidance.UpdateConfigC2SPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -18,9 +16,6 @@ import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class CombinedConfigScreen extends Screen {
     private enum ConfigType { EVIL_EYES, GAZE_GUIDANCE }
@@ -30,9 +25,7 @@ public class CombinedConfigScreen extends Screen {
     private int panelX, panelY, panelWidth, panelHeight;
     private int leftWidth, rightWidth;
 
-    // 千里眼组件（仅保留前4个基本字段）
-    private final List<ButtonWidget> entityButtons = new ArrayList<>();
-    private static final Map<UUID, Long> localMarkedEntities = new ConcurrentHashMap<>();
+    // 千里眼组件
     private final List<ButtonWidget> stageButtons = new ArrayList<>();
     private int currentStage = 1;
     private TextFieldWidget dailyField, marksField, minScoreField, maxScoreField,watchTimeField,parrotDailyField,maxActiveField;
@@ -117,7 +110,6 @@ public class CombinedConfigScreen extends Screen {
         int labelWidth = 100;
         int inputWidth = 60;
 
-        // 只保留4个基本标签
         String[] labels = {
                 "每日可使用次数:", "最大标记数量:", "触发区间(下限):", "触发区间(上限):","观看时长:","每日锚点放置次数:","锚点同存数:"
         };
@@ -127,7 +119,6 @@ public class CombinedConfigScreen extends Screen {
             evilLabels.add(label);
         }
 
-        // 创建7个输入框
         dailyField = createField(rightX + labelWidth, rowY, inputWidth);
         marksField = createField(rightX + labelWidth, rowY + rowHeight, inputWidth);
         minScoreField = createField(rightX + labelWidth, rowY + 2*rowHeight, inputWidth);
@@ -199,7 +190,6 @@ public class CombinedConfigScreen extends Screen {
         setGazeComponentsVisible(currentType == ConfigType.GAZE_GUIDANCE);
         if (currentType == ConfigType.EVIL_EYES) {
             loadEvilStageUI();
-            refreshEntityButtons();
         } else {
             loadGazeStageUI();
         }
@@ -207,7 +197,6 @@ public class CombinedConfigScreen extends Screen {
 
     private void setEvilComponentsVisible(boolean visible) {
         for (ButtonWidget btn : stageButtons) btn.visible = visible;
-        for (ButtonWidget btn : entityButtons) btn.visible = visible;
         for (TextWidget label : evilLabels) label.visible = visible;
         if (dailyField != null) dailyField.visible = visible;
         if (marksField != null) marksField.visible = visible;
@@ -217,7 +206,6 @@ public class CombinedConfigScreen extends Screen {
         if (saveEvilButton != null) saveEvilButton.visible = visible;
         if (parrotDailyField != null) parrotDailyField.visible = visible;
         if (maxActiveField != null) maxActiveField.visible = visible;
-
     }
 
     private void setGazeComponentsVisible(boolean visible) {
@@ -230,34 +218,7 @@ public class CombinedConfigScreen extends Screen {
         if (saveGazeButton != null) saveGazeButton.visible = visible;
     }
 
-    // ========== 千里眼相关 ==========
-    private void refreshEntityButtons() {
-        entityButtons.forEach(this::remove);
-        entityButtons.clear();
-        int yOffset = 70;
-        for (Map.Entry<UUID, Long> entry : localMarkedEntities.entrySet()) {
-            UUID uuid = entry.getKey();
-            String name = getEntityName(uuid);
-            ButtonWidget btn = ButtonWidget.builder(Text.literal(name), button -> {
-                ClientPlayNetworking.send(new SelectViewPayload(uuid));
-                if (client != null && client.player != null)
-                    client.player.sendMessage(Text.literal("§a正在切换到 " + name), true);
-            }).dimensions(panelX + 5, panelY + yOffset, leftWidth - 10, 20).build();
-            addDrawableChild(btn);
-            entityButtons.add(btn);
-            yOffset += 25;
-            if (yOffset + 25 > panelHeight - 20) break;
-        }
-    }
-
-    private String getEntityName(UUID uuid) {
-        if (client != null && client.world != null) {
-            var entity = client.world.getEntity(uuid);
-            if (entity != null) return entity.getName().getString();
-        }
-        return "未知实体";
-    }
-
+    // ========== 千里眼配置 ==========
     private void loadEvilStageUI() {
         GlobalConfigS2CPacket.StageConfig cfg = CACHED_EVIL_CONFIGS[currentStage];
         if (cfg == null) {
@@ -290,7 +251,6 @@ public class CombinedConfigScreen extends Screen {
             int maxActive = (Integer.parseInt(maxActiveField.getText().trim()));
             int watchTicks = watchSec * 20;
 
-            // 更新本地缓存
             CACHED_EVIL_CONFIGS[currentStage] = new GlobalConfigS2CPacket.StageConfig(
                     daily, marks, minScore, maxScore, watchTicks, parrotDaily,maxActive
             );
@@ -317,7 +277,7 @@ public class CombinedConfigScreen extends Screen {
         }
     }
 
-    // ========== 视线诱导相关 ==========
+    // ========== 视线诱导配置 ==========
     private void loadGazeStageUI() {
         if (cachedGazeConfig == null) {
             gazeDrainField.setText("");
@@ -362,18 +322,8 @@ public class CombinedConfigScreen extends Screen {
         }
     }
 
-    // ========== 公共方法 ==========
-    public static void updateMarkedList(Map<UUID, Long> marks) {
-        localMarkedEntities.clear();
-        localMarkedEntities.putAll(marks);
-        if (MinecraftClient.getInstance().currentScreen instanceof CombinedConfigScreen screen && screen.currentType == ConfigType.EVIL_EYES) {
-            screen.refreshEntityButtons();
-        }
-    }
-
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // 背景绘制
         context.fill(0, 0, width, height, 0xAA000000);
         context.fill(panelX - 1, panelY - 1, panelX + panelWidth + 1, panelY + panelHeight + 1, 0xFF444444);
         context.fill(panelX + leftWidth, panelY, panelX + leftWidth + 1, panelY + panelHeight, 0xFF444444);
@@ -381,7 +331,7 @@ public class CombinedConfigScreen extends Screen {
         context.fill(panelX + leftWidth + 1, panelY, panelX + panelWidth, panelY + panelHeight, 0xAA222222);
 
         if (currentType == ConfigType.EVIL_EYES) {
-            context.drawText(textRenderer, "已标记实体", panelX + 5, panelY + 5, 0xFFFFFF, false);
+            context.drawText(textRenderer, "千里眼阶段配置", panelX + 5, panelY + 5, 0xFFFFFF, false);
             context.drawText(textRenderer, "当前编辑: 阶段 " + currentStage, panelX + leftWidth + 5, panelY + 5, 0xFFFFFF, false);
         } else {
             context.drawText(textRenderer, "诱导阶段配置 - 当前阶段: " + gazeCurrentStage, panelX + leftWidth + 5, panelY + 5, 0xFFFFFF, false);

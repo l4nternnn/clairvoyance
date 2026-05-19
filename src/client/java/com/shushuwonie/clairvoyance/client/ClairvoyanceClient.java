@@ -201,7 +201,6 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				long expire = context.client().world != null ? context.client().world.getTime() + 60 : System.currentTimeMillis() / 50 + 60;
 				com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities.put(uuid, expire);
 				com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
-				CombinedConfigScreen.updateMarkedList(com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 			});
 		});
 
