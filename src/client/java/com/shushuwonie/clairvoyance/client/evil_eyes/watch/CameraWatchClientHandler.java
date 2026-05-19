@@ -1,6 +1,8 @@
 package com.shushuwonie.clairvoyance.client.evil_eyes.watch;
 
+import com.shushuwonie.clairvoyance.network.camerawatch.CameraWatchStopC2SPacket;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -12,31 +14,13 @@ import net.minecraft.storage.WriteView;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
-import java.lang.reflect.Field;
-
 public class CameraWatchClientHandler {
 
     private static Entity dummyCamera = null;
     private static Vec3d targetPos = null;
     private static float targetYaw = 0, targetPitch = 0;
     private static boolean hasValidTarget = false;
-    private static boolean reflectOk = false;
-    private static Field px, py, pz, pyw, pp;
-
-    static {
-        for (Field f : Entity.class.getDeclaredFields()) {
-            String n = f.getName();
-            if (!reflectOk && n.endsWith("prevX")) { px = f; px.setAccessible(true); }
-            if (!reflectOk && n.endsWith("prevY")) { py = f; py.setAccessible(true); }
-            if (!reflectOk && n.endsWith("prevZ")) { pz = f; pz.setAccessible(true); }
-            if (!reflectOk && n.endsWith("prevYaw")) { pyw = f; pyw.setAccessible(true); }
-            if (!reflectOk && n.endsWith("prevPitch")) { pp = f; pp.setAccessible(true); }
-            if (px != null && py != null && pz != null && pyw != null && pp != null) {
-                reflectOk = true;
-                break;
-            }
-        }
-    }
+    private static boolean lastSneak = false;
 
     public static void onCameraUpdate(Vec3d pos, float yaw, float pitch) {
         targetPos = pos;
@@ -45,20 +29,30 @@ public class CameraWatchClientHandler {
         hasValidTarget = true;
     }
 
-    public static boolean isActive() {
-        return hasValidTarget && dummyCamera != null;
-    }
-
     public static void onUnbind() {
         dummyCamera = null;
         hasValidTarget = false;
         targetPos = null;
+        lastSneak = false;
         MinecraftClient.getInstance().cameraEntity = MinecraftClient.getInstance().player;
+    }
+
+    public static boolean isActive() {
+        return hasValidTarget && dummyCamera != null;
     }
 
     public static void initialize() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.world == null || client.player == null) return;
+
+            // Shift 退出观看（上升沿触发，防重复发送）
+            if (hasValidTarget && client.player.isSneaking() && !lastSneak) {
+                lastSneak = true;
+                ClientPlayNetworking.send(new CameraWatchStopC2SPacket());
+                return;
+            }
+            lastSneak = client.player.isSneaking();
+
             if (!hasValidTarget || targetPos == null) return;
 
             if (dummyCamera == null) {
@@ -81,17 +75,7 @@ public class CameraWatchClientHandler {
             float nyaw = dummyCamera.getYaw() + MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw()) * 0.6f;
             float npitch = dummyCamera.getPitch() + MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180) * 0.6f;
 
-            if (reflectOk) {
-                double ox = dummyCamera.getX(), oy = dummyCamera.getY(), oz = dummyCamera.getZ();
-                float oyaw = dummyCamera.getYaw(), opitch = dummyCamera.getPitch();
-                dummyCamera.setPos(nx, ny, nz);
-                dummyCamera.setYaw(nyaw);
-                dummyCamera.setPitch(npitch);
-                try { px.setDouble(dummyCamera, ox); py.setDouble(dummyCamera, oy); pz.setDouble(dummyCamera, oz); } catch (Exception ignored) {}
-                try { pyw.setFloat(dummyCamera, oyaw); pp.setFloat(dummyCamera, opitch); } catch (Exception ignored) {}
-            } else {
-                dummyCamera.refreshPositionAndAngles(nx, ny, nz, nyaw, npitch);
-            }
+            dummyCamera.refreshPositionAndAngles(nx, ny, nz, nyaw, npitch);
 
             if (client.cameraEntity != dummyCamera) {
                 client.cameraEntity = dummyCamera;
