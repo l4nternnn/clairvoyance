@@ -50,6 +50,8 @@ public class Evil_Eyes {
 
     // 玩家标记列表：玩家UUID -> (目标UUID -> 过期时间)
     private static final Map<UUID, Map<UUID, Long>> playerMarkedEntities = new ConcurrentHashMap<>();
+    // 手动取消标记冷却：被取消的实体在100 tick内不会被锚点/自动标记重新加回
+    private static final Map<UUID, Long> recentlyUnmarked = new ConcurrentHashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger("Clairvoyance");
 
 
@@ -272,6 +274,7 @@ public class Evil_Eyes {
 
             if (marks.containsKey(targetUuid)) {
                 marks.remove(targetUuid);
+                recentlyUnmarked.put(targetUuid, world.getTime() + 100); // 5秒冷却
                 player.sendMessage(Text.literal("§e已取消标记 " + target.getName().getString()), true);
                 sendMarkedListToClient(player, marks, maxMarks);
             } else {
@@ -387,6 +390,7 @@ public class Evil_Eyes {
                 }
             }
             playerMarkedEntities.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+            recentlyUnmarked.entrySet().removeIf(e -> e.getValue() <= now);
         });
 
         // 7. 自动标记原有：实体看向手持千里眼的玩家
@@ -404,6 +408,7 @@ public class Evil_Eyes {
                 Box searchBox = player.getBoundingBox().expand(range);
                 for (Entity entity : world.getOtherEntities(player, searchBox, e -> e instanceof LivingEntity && e.isAlive())) {
                     if (marks.containsKey(entity.getUuid())) continue;
+                    if (recentlyUnmarked.getOrDefault(entity.getUuid(), 0L) > world.getTime()) continue;
                     if (marks.size() >= maxMarks) continue;
                     if (!hasLineOfSight(entity, player)) continue;
                     Vec3d toPlayer = player.getPos().subtract(entity.getPos()).normalize();
@@ -547,6 +552,7 @@ public class Evil_Eyes {
 
                 for (LivingEntity living : nearby) {
                     if (marks.containsKey(living.getUuid())) continue;
+                    if (recentlyUnmarked.getOrDefault(living.getUuid(), 0L) > world.getTime()) continue;
                     if (marks.size() >= maxMarks) break;
 
                     // 1. 视线检测：从实体眼睛到盔甲架是否有遮挡
