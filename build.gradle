@@ -31,6 +31,15 @@ loom {
 		}
 	}
 
+	runs {
+		client {
+			vmArgs("-Xmx4G", "-Xms1G")
+		}
+		server {
+			vmArgs("-Xmx2G", "-Xms512M")
+		}
+	}
+
 }
 
 fabricApi {
