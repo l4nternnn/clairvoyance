@@ -91,16 +91,13 @@ public class Evil_Eyes {
 
 
     // ========== 辅助方法 ==========
-    private static List<Map.Entry<UUID, Long>> getRandomSubset(Map<UUID, Long> marks, int limit) {
-        if (marks.size() <= limit) return new ArrayList<>(marks.entrySet());
-        List<Map.Entry<UUID, Long>> entryList = new ArrayList<>(marks.entrySet());
-        Collections.shuffle(entryList);
-        return entryList.subList(0, limit);
-    }
+    private static final UUID CLEAR_SIGNAL = new UUID(0, 0);
 
     private static void sendMarkedListToClient(ServerPlayerEntity player, Map<UUID, Long> marks, int maxDisplayCount) {
-        List<Map.Entry<UUID, Long>> subset = getRandomSubset(marks, maxDisplayCount);
-        for (Map.Entry<UUID, Long> entry : subset) {
+        // 先发清空信号，客户端收到后清空本地列表
+        ServerPlayNetworking.send(player, new EntityMarkedPayload(CLEAR_SIGNAL, ""));
+        // 发送全部标记实体
+        for (Map.Entry<UUID, Long> entry : marks.entrySet()) {
             UUID uuid = entry.getKey();
             Entity e = player.getWorld().getEntity(uuid);
             String name = (e != null) ? e.getName().getString() : "未知";
