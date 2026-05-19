@@ -211,9 +211,10 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(EntityMarkedPayload.ID, (packet, context) -> {
 			context.client().execute(() -> {
 				UUID uuid = packet.entityUuid();
-				// 清空信号：服务端即将发送新的完整列表
+				// 清空信号：同步清空本地标记和GUI列表
 				if (uuid.getMostSignificantBits() == 0 && uuid.getLeastSignificantBits() == 0) {
 					com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities.clear();
+					com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 					return;
 				}
 				long expire = context.client().world != null ? context.client().world.getTime() + 60 : System.currentTimeMillis() / 50 + 60;
