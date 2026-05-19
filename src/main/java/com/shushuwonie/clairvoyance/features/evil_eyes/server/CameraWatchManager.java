@@ -73,7 +73,7 @@ public class CameraWatchManager {
         UUID viewerId = viewer.getUuid();
         float targetYaw = target.getYaw();
         float prevSmoothYaw = smoothYaws.getOrDefault(viewerId, targetYaw);
-        float lerpFactor = 0.2f;
+        float lerpFactor = 0.3f;
         float smoothYaw = prevSmoothYaw + MathHelper.wrapDegrees(targetYaw - prevSmoothYaw) * lerpFactor;
         smoothYaws.put(viewerId, smoothYaw);
 

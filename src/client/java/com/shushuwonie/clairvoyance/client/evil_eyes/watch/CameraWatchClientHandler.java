@@ -46,24 +46,20 @@ public class CameraWatchClientHandler {
                     @Override protected void writeCustomData(WriteView view) {}
                 };
                 dummyCamera.setInvisible(true);
-                // refreshPositionAndAngles 同时设置 prevX/Y/Z，避免 getLerpedPos 在 (0,0,0) 和当前位置之间插值
                 dummyCamera.refreshPositionAndAngles(targetPos.x, targetPos.y, targetPos.z, targetYaw, targetPitch);
                 client.cameraEntity = dummyCamera;
                 return;
             }
 
-            // 固定步长平滑
+            // 高响应lerp：每tick移动70%距离，约3 tick (0.15秒) 收敛到目标
             Vec3d current = dummyCamera.getPos();
-            Vec3d newPosXZ = new Vec3d(
-                    MathHelper.lerp(0.3, current.x, targetPos.x),
-                    MathHelper.lerp(0.3, current.y, targetPos.y),
-                    MathHelper.lerp(0.3, current.z, targetPos.z)
-            );
-            float newYaw = dummyCamera.getYaw() + MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw()) * 0.3f;
-            float newPitch = dummyCamera.getPitch() + MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180) * 0.3f;
+            double nx = current.x + (targetPos.x - current.x) * 0.7;
+            double ny = current.y + (targetPos.y - current.y) * 0.7;
+            double nz = current.z + (targetPos.z - current.z) * 0.7;
+            float nyaw = dummyCamera.getYaw() + MathHelper.wrapDegrees(targetYaw - dummyCamera.getYaw()) * 0.6f;
+            float npitch = dummyCamera.getPitch() + MathHelper.clamp(targetPitch - dummyCamera.getPitch(), -180, 180) * 0.6f;
 
-            // 使用 refreshPositionAndAngles 确保 prev 坐标同步，消除渲染抖动
-            dummyCamera.refreshPositionAndAngles(newPosXZ.x, newPosXZ.y, newPosXZ.z, newYaw, newPitch);
+            dummyCamera.refreshPositionAndAngles(nx, ny, nz, nyaw, npitch);
 
             if (client.cameraEntity != dummyCamera) {
                 client.cameraEntity = dummyCamera;
