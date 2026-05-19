@@ -3,7 +3,8 @@
 	"package": "com.shushuwonie.clairvoyance.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"HideHandMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

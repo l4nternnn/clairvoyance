@@ -45,6 +45,10 @@ public class CameraWatchClientHandler {
         hasValidTarget = true;
     }
 
+    public static boolean isActive() {
+        return hasValidTarget && dummyCamera != null;
+    }
+
     public static void onUnbind() {
         dummyCamera = null;
         hasValidTarget = false;
