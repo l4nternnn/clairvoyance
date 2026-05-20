@@ -4,11 +4,14 @@ import com.google.gson.JsonObject;
 import com.shushuwonie.clairvoyance.command.ClairvoyanceCommand;
 import com.shushuwonie.clairvoyance.command.WatchCommand;
 import com.shushuwonie.clairvoyance.config.GlobalConfigManager;
+import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
 import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
 import com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager;
 import com.shushuwonie.clairvoyance.features.guidance.Gazeguidance;
 import com.shushuwonie.clairvoyance.item.config.GazeConfig;
 import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;
+import com.shushuwonie.clairvoyance.item.modblock.ModBlocks;
+import com.shushuwonie.clairvoyance.item.modblock.moditems.Assembly_ModItems;
 import com.shushuwonie.clairvoyance.network.ModNetworking;
 import com.shushuwonie.clairvoyance.network.camerawatch.*;
 import com.shushuwonie.clairvoyance.network.clairvoyance.*;
@@ -207,7 +210,7 @@ public class Clairvoyance implements ModInitializer {
 		Assembly_ModItems.initialize();
 		ModBlockEntities.initialize();
 
-		
+
 
 //		LOGGER.info("Clairvoyance Mod 初始化完成");
 
