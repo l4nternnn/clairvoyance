@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "clairvoyance:block/testblock"
+    "model": "clairvoyance:block/model_right_leg"
   }
 }

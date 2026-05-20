@@ -40,7 +40,7 @@ public class TorsoBlockEntityRenderer implements BlockEntityRenderer<TorsoBlockE
         matrices.translate(0.5F, 0.0F, 0.5F);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
         matrices.scale(-1.0F, -1.0F, 1.0F);
-        matrices.translate(0.0F, -0.625F, 0.0F);
+        matrices.translate(0.0F, 0.375F, 0.0F);
 
         Identifier texture = getSkinTexture(entity.getOwner());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
