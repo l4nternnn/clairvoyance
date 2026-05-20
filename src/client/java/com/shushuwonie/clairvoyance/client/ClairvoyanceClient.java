@@ -438,6 +438,43 @@ public class ClairvoyanceClient implements ClientModInitializer {
 			long now = System.currentTimeMillis();
 			anchors.entrySet().removeIf(entry -> now - entry.getValue().lastSeenTime > 3000);
 		});
+
+		// 注册模型层
+		//躯干
+
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.TORSO, TorsoModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.TORSO_BLOCK_ENTITY,
+				TorsoBlockEntityRenderer::new
+		);
+
+		//左手
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.LEFT_ARM, LeftArmModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.LEFT_ARM_BLOCK_ENTITY,
+				LeftArmBlockEntityRenderer::new
+		);
+
+		//右手臂
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_ARM, RightArmModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.RIGHT_ARM_BLOCK_ENTITY,
+				RightArmBlockEntityRenderer::new
+		);
+
+		//左腿
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.LEFT_LEG, LeftLegModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.LEFT_LEG_BLOCK_ENTITY,
+				LeftLegBlockEntityRenderer::new
+		);
+
+		//右腿
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_LEG, RightLegModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.RIGHT_LEG_BLOCK_ENTITY,
+				RightLegBlockEntityRenderer::new
+		);
 	}
 
 	// ==================== 渲染方法（保持不变）====================
