@@ -45,7 +45,7 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
         matrices.translate(0.5F, 0.0F, 0.5F);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F));
         matrices.scale(-1.0F, -1.0F, 1.0F);
-        matrices.translate(0.0F, -1.5F, 0.0F); // 根据模型高度微调
+        matrices.translate(0.0F, 0.75F, 0.0F);
 
         renderModel(matrices, vertexConsumers, renderLayer, light, overlay);
 
