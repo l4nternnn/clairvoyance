@@ -40,7 +40,6 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
                        VertexConsumerProvider vertexConsumers, int light, int overlay, boolean leftHanded) {
         Data actualData = data != null ? data : this.defaultData;
         RenderLayer renderLayer = actualData.layer();
-        System.out.println("render called, data=" + data + ", layer=" + renderLayer);
 
         matrices.push();
         matrices.translate(0.5F, 0.0F, 0.5F);
@@ -59,7 +58,6 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
     @Nullable
     @Override
     public Data getData(ItemStack stack) {
-        System.out.println("getData called, stack=" + stack);
         ProfileComponent profile = stack.get(DataComponentTypes.PROFILE);
         if (profile == null) return null;
         ProfileComponent resolved = profile.resolve();

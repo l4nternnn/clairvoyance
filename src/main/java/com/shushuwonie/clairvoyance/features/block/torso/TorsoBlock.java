@@ -71,30 +71,18 @@ public class TorsoBlock extends BlockWithEntity {
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        System.out.println("TorsoBlock.createBlockEntity called at " + pos);
         return new TorsoBlockEntity(pos, state);
     }
 
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
-        System.out.println("=== TorsoBlock.onPlaced ===");
-        System.out.println("Placer: " + (placer != null ? placer.getName().getString() : "null"));
-        System.out.println("Item has profile: " + itemStack.contains(DataComponentTypes.PROFILE));
-
         if (world.getBlockEntity(pos) instanceof TorsoBlockEntity torsoEntity) {
             ProfileComponent itemProfile = itemStack.get(DataComponentTypes.PROFILE);
-            BlockEntity be = world.getBlockEntity(pos);
-            System.out.println("BlockEntity at pos: " + be + " (class: " + (be != null ? be.getClass().getSimpleName() : "null") + ")");
             if (itemProfile != null) {
                 torsoEntity.setOwner(itemProfile);
-                System.out.println("Owner set from item: " + itemProfile.gameProfile().getName());
             } else if (placer instanceof PlayerEntity player) {
-                ProfileComponent placerProfile = new ProfileComponent(player.getGameProfile());
-                torsoEntity.setOwner(placerProfile);
-                System.out.println("Owner set from placer: " + player.getName().getString());
-            } else {
-                System.out.println("No owner set!");
+                torsoEntity.setOwner(new ProfileComponent(player.getGameProfile()));
             }
             torsoEntity.markDirty();
         }

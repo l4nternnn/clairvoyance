@@ -1,8 +1,6 @@
 package com.shushuwonie.clairvoyance.features.block.leg;
 
 import com.mojang.serialization.MapCodec;
-import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -35,7 +33,7 @@ public class RightLegBlock extends BlockWithEntity {
 
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() {
-        return createCodec(LeftLegBlock::new);
+        return createCodec(RightLegBlock::new);
     }
 
     @Override
@@ -71,21 +69,20 @@ public class RightLegBlock extends BlockWithEntity {
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        System.out.println("RightArmBlock.createBlockEntity called at " + pos);
-        return new RightLegBlockEntity(pos, state);   // 确保这个类存在
+        return new RightLegBlockEntity(pos, state);
     }
 
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
-        if (world.getBlockEntity(pos) instanceof RightLegBlockEntity armEntity) {
+        if (world.getBlockEntity(pos) instanceof RightLegBlockEntity legEntity) {
             ProfileComponent itemProfile = itemStack.get(DataComponentTypes.PROFILE);
             if (itemProfile != null) {
-                armEntity.setOwner(itemProfile);
+                legEntity.setOwner(itemProfile);
             } else if (placer instanceof PlayerEntity player) {
-                armEntity.setOwner(new ProfileComponent(player.getGameProfile()));
+                legEntity.setOwner(new ProfileComponent(player.getGameProfile()));
             }
-            armEntity.markDirty();
+            legEntity.markDirty();
         }
     }
 }

@@ -1,10 +1,7 @@
 package com.shushuwonie.clairvoyance.client.renderer.leg;
 
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
-import com.shushuwonie.clairvoyance.client.model.arm.RightArmModel;
 import com.shushuwonie.clairvoyance.client.model.leg.LeftLegModel;
-import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlock;
-import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlock;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
 import net.minecraft.client.MinecraftClient;

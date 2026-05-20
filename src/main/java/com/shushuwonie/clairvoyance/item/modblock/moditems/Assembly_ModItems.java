@@ -60,7 +60,5 @@ public class Assembly_ModItems {
         Identifier id = Identifier.of("clairvoyance", path);
         Registry.register(Registries.ITEM, id, item);
     }
-
-
-    }
+}
 

@@ -14,8 +14,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
-import java.util.Set;
-
 public class ModBlockEntities {
     public static final BlockEntityType<TorsoBlockEntity> TORSO_BLOCK_ENTITY = Registry.register(
             Registries.BLOCK_ENTITY_TYPE,
@@ -45,16 +43,6 @@ public class ModBlockEntities {
             FabricBlockEntityTypeBuilder.create(RightLegBlockEntity::new, ModBlocks.RIGHT_LEG).build()
     );
 
-
-
-
-
-
-
-
-
-
     public static void initialize() {
-        // 触发静态初始化
     }
 }
