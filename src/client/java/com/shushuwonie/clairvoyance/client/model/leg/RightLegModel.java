@@ -20,7 +20,7 @@ public class RightLegModel extends SkullBlockEntityModel {
         // 左臂：宽6，高12，深6，原点偏移使其位于方块左侧
         root.addChild(EntityModelPartNames.HEAD,
                 ModelPartBuilder.create().uv(0, 16).cuboid(-2.0F, -12.0F, -2.0f, 4.0F, 12.0F, 4.0F),
-                ModelTransform.origin(3.0f,10.0f,0.0f));
+                ModelTransform.origin(-3.0f,-6.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }
 

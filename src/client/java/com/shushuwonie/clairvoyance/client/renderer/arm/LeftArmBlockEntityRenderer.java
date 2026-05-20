@@ -35,8 +35,8 @@ public class LeftArmBlockEntityRenderer implements BlockEntityRenderer<LeftArmBl
         matrices.push();
         matrices.translate(0.5F, 0.0F, 0.5F);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
-        matrices.scale(1.0F, -1.0F, -1.0F);
-        matrices.translate(0.0F, 0.5F, 0.0F);  // 根据模型高度微调
+        matrices.scale(-1.0F, -1.0F, 1.0F);
+        matrices.translate(0.0F, -1.5F, 0.0F);
 
         Identifier texture = getSkinTexture(entity.getOwner());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
