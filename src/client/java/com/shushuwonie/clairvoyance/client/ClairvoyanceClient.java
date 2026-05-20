@@ -486,6 +486,8 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				LeftLegBlockEntityRenderer::new
 		);
 
+			// 注册 SpecialModelRenderer（物品栏/手持 3D 渲染）
+
 		//右腿
 		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_LEG, RightLegModel::getTexturedModelData);
 		BlockEntityRendererFactories.register(
