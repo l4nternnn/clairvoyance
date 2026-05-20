@@ -203,7 +203,11 @@ public class Clairvoyance implements ModInitializer {
 		Evil_Eyes.initialize(configManager);
 		Gazeguidance.initialize();
 		ModItems.initialize();
+		ModBlocks.initialize();   // 确保所有 static 字段被初始化
+		Assembly_ModItems.initialize();
+		ModBlockEntities.initialize();
 
+		
 
 //		LOGGER.info("Clairvoyance Mod 初始化完成");
 
