@@ -1,7 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "clairvoyance:block/model_torso"
+    "model": "clairvoyance:block/testblock"
   }
-
 }

@@ -1,0 +1,24 @@
+{
+  "model_types": {
+    "clairvoyance:torso": {
+      "model": "clairvoyance:item/torso",
+      "type": "clairvoyance:torso"
+    },
+    "clairvoyance:left_arm": {
+      "model": "clairvoyance:item/left_arm",
+      "type": "clairvoyance:left_arm"
+    },
+    "clairvoyance:right_arm": {
+      "model": "clairvoyance:item/right_arm",
+      "type": "clairvoyance:right_arm"
+    },
+    "clairvoyance:left_leg": {
+      "model": "clairvoyance:item/left_leg",
+      "type": "clairvoyance:left_leg"
+    },
+    "clairvoyance:right_leg": {
+      "model": "clairvoyance:item/right_leg",
+      "type": "clairvoyance:right_leg"
+    }
+  }
+}

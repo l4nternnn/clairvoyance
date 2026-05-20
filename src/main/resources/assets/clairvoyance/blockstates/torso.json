@@ -1,8 +1,16 @@
 {
   "variants": {
+<<<<<<< Updated upstream
     "facing=north": { "model": "clairvoyance:block/model_torso" },
     "facing=east":  { "model": "clairvoyance:block/model_torso", "y": 90 },
     "facing=south": { "model": "clairvoyance:block/model_torso", "y": 180 },
     "facing=west":  { "model": "clairvoyance:block/model_torso", "y": 270 }
   }
 }
+=======
+    "": {
+      "model": "clairvoyance:block/1testblock"
+    }
+  }
+}
+>>>>>>> Stashed changes

@@ -9,7 +9,11 @@
   "item.clairvoyance.magic_stick": "|魔法:§6视线诱导§r|",
   "key.gazeguidance.magic": "标记实体",
   "key.gazeguidance.stage_config": "打开注入界面",
-  "category.gazeguidance": "视线诱导"
+  "category.gazeguidance": "视线诱导",
 
-
+  "item.clairvoyance.torso": "玩家躯干",
+  "item.clairvoyance.left_arm": "玩家左臂",
+  "item.clairvoyance.right_arm": "玩家右臂",
+  "item.clairvoyance.left_leg": "玩家左腿",
+  "item.clairvoyance.right_leg": "玩家右腿"
 }
