@@ -1,6 +1,9 @@
 {
   "model": {
-    "type": "minecraft:model",
-    "model": "clairvoyance:block/model_right_arm"
+    "type": "minecraft:special",
+    "base": "clairvoyance:item/right_arm",
+    "model": {
+      "type": "clairvoyance:right_arm"
+    }
   }
 }

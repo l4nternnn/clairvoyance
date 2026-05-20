@@ -16,7 +16,12 @@ import com.shushuwonie.clairvoyance.client.renderer.arm.LeftArmBlockEntityRender
 import com.shushuwonie.clairvoyance.client.renderer.arm.RightArmBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.LeftLegBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.RightLegBlockEntityRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.arm.LeftArmSpecialModelRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.arm.RightArmSpecialModelRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.leg.LeftLegSpecialModelRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.leg.RightLegSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.torso.TorsoBlockEntityRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.torso.TorsoSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
 import com.shushuwonie.clairvoyance.network.ModNetworking;
 import com.shushuwonie.clairvoyance.network.clairvoyance.*;
@@ -50,6 +55,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
+import net.minecraft.client.render.item.model.special.SpecialModelTypes;
 import net.minecraft.client.render.item.model.special.SpecialModelRenderer;
 import net.minecraft.client.toast.SystemToast;
 import net.minecraft.registry.Registries;
@@ -486,8 +492,13 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				LeftLegBlockEntityRenderer::new
 		);
 
-			// 注册 SpecialModelRenderer（物品栏/手持 3D 渲染）
 
+			// 注册 SpecialModelRenderer 类型（物品栏/手持 3D 渲染）
+			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "torso"), TorsoSpecialModelRenderer.Unbaked.CODEC);
+			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_arm"), LeftArmSpecialModelRenderer.Unbaked.CODEC);
+			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_arm"), RightArmSpecialModelRenderer.Unbaked.CODEC);
+			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_leg"), LeftLegSpecialModelRenderer.Unbaked.CODEC);
+			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_leg"), RightLegSpecialModelRenderer.Unbaked.CODEC);
 		//右腿
 		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_LEG, RightLegModel::getTexturedModelData);
 		BlockEntityRendererFactories.register(
