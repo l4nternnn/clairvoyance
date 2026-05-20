@@ -2,6 +2,7 @@ package com.shushuwonie.clairvoyance;
 
 import com.google.gson.JsonObject;
 import com.shushuwonie.clairvoyance.command.ClairvoyanceCommand;
+import com.shushuwonie.clairvoyance.command.GiveBodyPartCommand;
 import com.shushuwonie.clairvoyance.command.WatchCommand;
 import com.shushuwonie.clairvoyance.config.GlobalConfigManager;
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
@@ -32,7 +33,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.*;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageTypes;
@@ -140,6 +140,10 @@ public class Clairvoyance implements ModInitializer {
 		CameraWatchStartC2SPacket.register();
 		CameraWatchStopC2SPacket.register();
 
+
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			GiveBodyPartCommand.register(dispatcher);
+		});
 
 		GlobalConfigManager configManager = new GlobalConfigManager();
 
@@ -473,8 +477,8 @@ public class Clairvoyance implements ModInitializer {
 			}
 		});
 
-// 观看模式下禁止交互（服务端拦截）
-// 阻止攻击实体
+		// 观看模式下禁止交互（服务端拦截）
+		// 阻止攻击实体
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
 				serverPlayer.sendMessage(Text.literal("§c观看模式下无法攻击"), true);
