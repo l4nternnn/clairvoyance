@@ -18,9 +18,13 @@ public class RightArmModel extends SkullBlockEntityModel {
         ModelData modelData = new ModelData();
         ModelPartData root = modelData.getRoot();
         // 左臂：宽6，高12，深6，原点偏移使其位于方块左侧
-        root.addChild(EntityModelPartNames.HEAD,
-                ModelPartBuilder.create().uv(40, 16).cuboid(-2.0F, -12.0F, -2.0f, 4.0F, 12.0F, 4.0F),
-                ModelTransform.origin(0.0f,-6.0f,0.0f));
+        ModelPartData rightArm =  root.addChild(EntityModelPartNames.HEAD,
+                ModelPartBuilder.create().uv(40, 16).cuboid(-4.0F, -12.0F, -4.0f, 4.0F, 12.0F, 4.0F),
+                ModelTransform.origin(-0.0f,-.0f,0.0f));
+
+        rightArm.addChild("right_sleeve",
+                ModelPartBuilder.create().uv(40, 32).cuboid(-4.0F, -12.0F, -4.0F, 4.0F, 12.0F, 4.0F, new Dilation(0.25F)),
+                ModelTransform.origin(-0.0f,-.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }
 

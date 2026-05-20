@@ -5,14 +5,12 @@ import com.shushuwonie.clairvoyance.client.model.torso.TorsoModel;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlock;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.util.Identifier;
@@ -39,8 +37,8 @@ public class TorsoBlockEntityRenderer implements BlockEntityRenderer<TorsoBlockE
         matrices.push();
         matrices.translate(0.5F, 0.0F, 0.5F);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
-        matrices.scale(-1.0F, -1.0F, 1.0F);
-        matrices.translate(0.0F, 0.375F, 0.0F);
+        matrices.scale(1.0F, -1.0F, -1.0F);
+        matrices.translate(0.0F, -0.2F, 0.0F);
 
         Identifier texture = getSkinTexture(entity.getOwner());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
