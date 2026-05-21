@@ -47,6 +47,7 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
                 this.owner = resolved;
                 this.markDirty();
                 if (this.world != null && !this.world.isClient) {
+                    // 同步到客户端，强制重新渲染
                     ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
                 }
             }
@@ -62,6 +63,12 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
         this.owner = optional.orElse(null);
         if (this.owner != null && !this.owner.isCompleted()) {
             this.setOwner(this.owner);
+        }else {
+            // 如果已完成，直接标记脏并同步到客户端
+            this.markDirty();
+            if (this.world != null && !this.world.isClient) {
+                ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
+            }
         }
     }
 

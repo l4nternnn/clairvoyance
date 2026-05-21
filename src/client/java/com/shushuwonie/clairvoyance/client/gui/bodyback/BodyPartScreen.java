@@ -51,10 +51,10 @@ public class BodyPartScreen extends HandledScreen<BodyPartScreenHandler> {
 //        this.titleX = (this.backgroundWidth - this.textRenderer.getWidth(this.title)) / 2;
     }
 
-    @Override
-    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        // 使用白色带阴影的文字
-        context.drawTextWithShadow(this.textRenderer, this.title, this.titleX, this.titleY, 0xFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 0xFFFFFF);
-    }
+//    @Override
+//    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+//        // 使用白色带阴影的文字
+//        context.drawTextWithShadow(this.textRenderer, this.title, this.titleX, this.titleY, 0xFFFFFF);
+////        context.drawTextWithShadow(this.textRenderer, this.playerInventoryTitle, this.playerInventoryTitleX, this.playerInventoryTitleY, 0xFFFFFF);
+//    }
 }
