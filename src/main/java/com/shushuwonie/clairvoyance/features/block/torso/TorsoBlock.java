@@ -1,6 +1,7 @@
 package com.shushuwonie.clairvoyance.features.block.torso;
 
 import com.mojang.serialization.MapCodec;
+import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -12,8 +13,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -36,6 +40,24 @@ public class TorsoBlock extends BlockWithEntity {
     protected MapCodec<? extends BlockWithEntity> getCodec() {
         // 必须实现抽象方法，返回一个能够反序列化该方块实例的Codec
         return createCodec(TorsoBlock::new);
+    }
+
+    // 去掉注释，并添加上日志
+    @Override
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+//        System.out.println("TorsoBlock.onUse called on " + (world.isClient ? "client" : "server"));
+        if (!world.isClient) {
+            BlockEntity be = world.getBlockEntity(pos);
+//            System.out.println("BlockEntity: " + be);
+            if (be instanceof BodyPartBlockEntity bodyPart) {
+//                System.out.println("Opening screen...");
+                player.openHandledScreen(bodyPart);
+            }
+//            else {
+//                System.out.println("BlockEntity is not BodyPartBlockEntity");
+//            }
+        }
+        return ActionResult.SUCCESS;
     }
 
     @Override
@@ -71,6 +93,7 @@ public class TorsoBlock extends BlockWithEntity {
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        System.out.println("TorsoBlock.createBlockEntity called at " + pos);
         return new TorsoBlockEntity(pos, state);
     }
 

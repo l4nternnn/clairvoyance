@@ -23,6 +23,7 @@ import com.shushuwonie.clairvoyance.network.gazeguidance.*;
 import com.shushuwonie.clairvoyance.network.openback.CarryEntityPayload;
 import com.shushuwonie.clairvoyance.network.openback.OpenOtherInventoryPayload;
 import com.shushuwonie.clairvoyance.network.openback.PlaceCarriedEntityPayload;
+import com.shushuwonie.clairvoyance.screen.ModScreenHandlers;
 import com.shushuwonie.clairvoyance.screen.OtherPlayerInventoryScreenHandler;
 import com.shushuwonie.clairvoyance.screen.OtherPlayerInventoryScreenHandlerFactory;
 
@@ -213,7 +214,7 @@ public class Clairvoyance implements ModInitializer {
 		ModBlocks.initialize();   // 确保所有 static 字段被初始化
 		Assembly_ModItems.initialize();
 		ModBlockEntities.initialize();
-
+		ModScreenHandlers.initialize();
 
 
 //		LOGGER.info("Clairvoyance Mod 初始化完成");

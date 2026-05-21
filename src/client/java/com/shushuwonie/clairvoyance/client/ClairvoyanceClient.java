@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.shushuwonie.clairvoyance.Clairvoyance;
 import com.shushuwonie.clairvoyance.client.evil_eyes.watch.CameraWatchClientHandler;
 import com.shushuwonie.clairvoyance.client.evil_eyes.watch.ClientCameraWatchReceiver;
+import com.shushuwonie.clairvoyance.client.gui.bodyback.BodyPartScreen;
 import com.shushuwonie.clairvoyance.client.gui.openback.OtherPlayerInventoryScreen;
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.arm.LeftArmModel;
@@ -38,6 +39,7 @@ import com.shushuwonie.clairvoyance.network.openback.CarryEntityPayload;
 import com.shushuwonie.clairvoyance.network.openback.OpenOtherInventoryPayload;
 import com.shushuwonie.clairvoyance.network.openback.PlaceCarriedEntityPayload;
 
+import com.shushuwonie.clairvoyance.screen.ModScreenHandlers;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -56,10 +58,7 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.*;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.render.item.model.special.SpecialModelTypes;
-import net.minecraft.client.render.item.model.special.SpecialModelRenderer;
 import net.minecraft.client.toast.SystemToast;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
@@ -493,18 +492,21 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		);
 
 
-			// 注册 SpecialModelRenderer 类型（物品栏/手持 3D 渲染）
-			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "torso"), TorsoSpecialModelRenderer.Unbaked.CODEC);
-			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_arm"), LeftArmSpecialModelRenderer.Unbaked.CODEC);
-			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_arm"), RightArmSpecialModelRenderer.Unbaked.CODEC);
-			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_leg"), LeftLegSpecialModelRenderer.Unbaked.CODEC);
-			SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_leg"), RightLegSpecialModelRenderer.Unbaked.CODEC);
 		//右腿
 		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_LEG, RightLegModel::getTexturedModelData);
 		BlockEntityRendererFactories.register(
 				ModBlockEntities.RIGHT_LEG_BLOCK_ENTITY,
 				RightLegBlockEntityRenderer::new
 		);
+		// 注册 SpecialModelRenderer 类型（物品栏/手持 3D 渲染）
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "torso"), TorsoSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_arm"), LeftArmSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_arm"), RightArmSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_leg"), LeftLegSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_leg"), RightLegSpecialModelRenderer.Unbaked.CODEC);
+
+
+		HandledScreens.register(ModScreenHandlers.BODY_PART_SCREEN_HANDLER, BodyPartScreen::new);
 	}
 
 	// ==================== 渲染方法（保持不变）====================

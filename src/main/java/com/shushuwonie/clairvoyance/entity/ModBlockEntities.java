@@ -1,7 +1,6 @@
 package com.shushuwonie.clairvoyance.entity;
 
 import com.shushuwonie.clairvoyance.Clairvoyance;
-import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
@@ -44,5 +43,6 @@ public class ModBlockEntities {
     );
 
     public static void initialize() {
+        System.out.println("Registered TORSO_BLOCK_ENTITY: " + TORSO_BLOCK_ENTITY.getRegistryEntry().getIdAsString());
     }
 }

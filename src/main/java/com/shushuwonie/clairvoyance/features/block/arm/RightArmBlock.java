@@ -1,6 +1,7 @@
 package com.shushuwonie.clairvoyance.features.block.arm;
 
 import com.mojang.serialization.MapCodec;
+import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -12,8 +13,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -85,5 +88,17 @@ public class RightArmBlock extends BlockWithEntity {
             }
             armEntity.markDirty();
         }
+    }
+
+    @Override
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+
+        if (!world.isClient) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof BodyPartBlockEntity bodyPart) {
+                player.openHandledScreen(bodyPart);
+            }
+        }
+        return ActionResult.SUCCESS;
     }
 }
