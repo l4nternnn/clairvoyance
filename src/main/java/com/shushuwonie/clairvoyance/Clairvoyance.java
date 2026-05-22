@@ -341,6 +341,27 @@ public class Clairvoyance implements ModInitializer {
 			}
 		});
 
+		// 玩家断线清理所有观看/携带状态
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+			ServerPlayerEntity player = handler.getPlayer();
+			CameraWatchManager.stopWatching(player, server);
+			Evil_Eyes.forceStopWatching(player, server);
+			com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes.clearPlayerMarks(player.getUuid());
+			VIEWING_MAP.remove(player);
+			VIEWING_MAP.values().removeIf(v -> v == player);
+			CarriedEntityData carriedData = CARRIED_ENTITIES.remove(player);
+			if (carriedData != null) {
+				Entity carried = carriedData.entity;
+				CARRIED_BY.remove(carried);
+				carried.setNoGravity(false);
+				carried.setInvulnerable(false);
+				carried.setSilent(false);
+				if (carried instanceof MobEntity mob) {
+					mob.setAiDisabled(false);
+				}
+			}
+			CARRIED_BY.entrySet().removeIf(e -> e.getValue() == player);
+		});
 
 		//		// 处理搬运实体请求
 		ServerPlayNetworking.registerGlobalReceiver(CarryEntityPayload.ID, (payload, context) -> {

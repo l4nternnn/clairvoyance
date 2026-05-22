@@ -170,6 +170,13 @@ public class Evil_Eyes {
     }
 
     /**
+     * 清除指定玩家的标记列表（用于断线清理）
+     */
+    public static void clearPlayerMarks(UUID playerUuid) {
+        playerMarkedEntities.remove(playerUuid);
+    }
+
+    /**
      * 清除指定玩家的所有锚点盔甲架
      * @param playerUuid 玩家 UUID
      * @return 清除的锚点数量
@@ -330,6 +337,7 @@ public class Evil_Eyes {
             ServerPlayerEntity player = context.player();
             playerMarkedEntities.remove(player.getUuid());
             CameraWatchManager.stopWatching(player, player.getServer());
+            watchingPlayers.remove(player.getUuid());
             ServerPlayNetworking.send(player, new ForceExitViewPayload());
             player.sendMessage(Text.literal("§e已退出观看"), true);
         });

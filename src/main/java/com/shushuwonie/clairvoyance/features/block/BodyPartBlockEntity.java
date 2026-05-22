@@ -41,34 +41,42 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
     public void setOwner(ProfileComponent owner) {
         this.owner = owner;
         this.markDirty();
-        if (this.loadingFuture != null) this.loadingFuture.cancel(false);
-        this.loadingFuture = owner.getFuture().thenApplyAsync(resolved -> {
-            if (resolved != null && !resolved.equals(this.owner)) {
-                this.owner = resolved;
-                this.markDirty();
-                if (this.world != null && !this.world.isClient) {
-                    // 同步到客户端，强制重新渲染
-                    ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
+        // 仅在服务端且 owner 不完整时触发异步解析
+        if (this.world != null && !this.world.isClient && owner != null && !owner.isCompleted()) {
+            if (this.loadingFuture != null) this.loadingFuture.cancel(false);
+            this.loadingFuture = owner.getFuture().thenApplyAsync(resolved -> {
+                if (resolved != null && !resolved.equals(this.owner)) {
+                    this.owner = resolved;
+                    this.markDirty();
+                    // 同步到客户端
+                    if (this.world != null && !this.world.isClient) {
+                        ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
+                    }
                 }
+                return resolved;
+            }, Util.getMainWorkerExecutor());
+        } else {
+            // 如果 owner 完整或为客户端，直接同步
+            if (this.world != null && !this.world.isClient) {
+                ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
             }
-            return resolved;
-        }, Util.getMainWorkerExecutor());
+        }
     }
 
     @Override
     protected void readData(ReadView view) {
         super.readData(view);
+        // 读取物品栏
         Inventories.readData(view, inventory);
+        // 读取 owner
         Optional<ProfileComponent> optional = view.read("owner", ProfileComponent.CODEC);
         this.owner = optional.orElse(null);
-        if (this.owner != null && !this.owner.isCompleted()) {
+        // 如果 owner 存在且不完整，尝试解析（仅在服务端）
+        if (this.owner != null && !this.owner.isCompleted() && this.world != null && !this.world.isClient) {
             this.setOwner(this.owner);
-        }else {
-            // 如果已完成，直接标记脏并同步到客户端
-            this.markDirty();
-            if (this.world != null && !this.world.isClient) {
-                ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
-            }
+        } else if (this.owner != null && this.owner.isCompleted() && this.world != null && !this.world.isClient) {
+            // 已完成，同步到客户端（确保纹理立即显示）
+            ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
         }
     }
 
@@ -81,6 +89,13 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
         }
     }
 
+    // ========== 物品栏部分 ==========
+    private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(9, ItemStack.EMPTY);
+
+    @Override
+    public DefaultedList<ItemStack> getItems() {
+        return inventory;
+    }
 
     @Override
     public void setStack(int slot, ItemStack stack) {
@@ -99,29 +114,17 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
     }
 
     @Override
-    public void clear() {
-        getItems().clear();
-        this.markDirty();
-    }
-
-    @Override
     public ItemStack removeStack(int slot) {
         ItemStack result = ImplementedInventory.super.removeStack(slot);
         if (!result.isEmpty()) this.markDirty();
         return result;
     }
 
-
-    // ========== 物品栏部分 ==========
-    private final DefaultedList<ItemStack> inventory = DefaultedList.ofSize(9, ItemStack.EMPTY);
-
     @Override
-    public DefaultedList<ItemStack> getItems() {
-        return inventory;
+    public void clear() {
+        getItems().clear();
+        this.markDirty();
     }
-
-
-
 
     // ========== GUI 部分 ==========
     @Override
@@ -134,6 +137,4 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
     public ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
         return new BodyPartScreenHandler(syncId, inv, this);
     }
-
-
 }

@@ -11,20 +11,21 @@ public class LeftArmModel extends SkullBlockEntityModel {
 
     public LeftArmModel(ModelPart root) {
         super(root);
-        this.left_arm = root.getChild(EntityModelPartNames.HEAD);
+        this.left_arm = root.getChild(EntityModelPartNames.LEFT_ARM);
     }
 
     public static TexturedModelData getTexturedModelData() {
         ModelData modelData = new ModelData();
         ModelPartData root = modelData.getRoot();
         // 左臂：宽6，高12，深6，原点偏移使其位于方块左侧
-        ModelPartData arm =  root.addChild(EntityModelPartNames.HEAD,
+        ModelPartData arm =  root.addChild(EntityModelPartNames.LEFT_ARM,
                 ModelPartBuilder.create().uv(32, 48).cuboid(-4.0F, -12.0F, -4.0f, 4.0F, 12.0F, 4.0F),
                 ModelTransform.origin(0.0f,0.0f,0.0f));
 
 
         arm.addChild("left_sleeve",
-                ModelPartBuilder.create().uv(48, 48).cuboid(-4.0F, -12.0F, -4.0F, 4.0F, 12.0F, 4.0F, new Dilation(0.25F))
+                ModelPartBuilder.create().uv(48, 48).cuboid(-4.0F, -12.0F, -4.0F, 4.0F,
+                                                                                12.0F, 4.0F, new Dilation(0.25F))
                 , ModelTransform.origin(0.0f,0.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }
