@@ -393,8 +393,8 @@ public class Clairvoyance implements ModInitializer {
 					Assembly_ModItems.RIGHT_LEG_ITEM
 				};
 				String[] chineseNames = new String[]{"躯干", "左臂", "右臂", "左腿", "右腿"};
-				double[] offsetsX = new double[]{0, -1.5, 1.5, 0, 0};
-				double[] offsetsZ = new double[]{0, 0, 0, -1.5, 1.5};
+				double[] offsetsX = new double[]{0, -1.0, 1.0, 0.8, -0.8};
+				double[] offsetsZ = new double[]{0, 0,      0,-1.5,-1.5};
 
 				for (int i = 0; i < 5; i++) {
 					ItemStack stack = new ItemStack(partItems[i]);
@@ -462,7 +462,7 @@ public class Clairvoyance implements ModInitializer {
 			if (!carrier.isSneaking()) return;
 			if (!carrier.getMainHandStack().isEmpty() || !carrier.getOffHandStack().isEmpty()) return;
 			if (!carrier.isCreative() && !carrier.getCommandTags().contains("kebao")) {
-				carrier.sendMessage(Text.literal("§c你无法抱起§k12§r"), false);
+				carrier.sendMessage(Text.literal("§c还无法抱起§k12§r"), false);
 				return;
 			}
 			ServerWorld world = (ServerWorld) carrier.getWorld();
@@ -472,14 +472,14 @@ public class Clairvoyance implements ModInitializer {
 			// 检查冷却
 			Long cooldownEnd = CARRIED_COOLDOWN.get(target);
 			if (cooldownEnd != null && cooldownEnd > System.currentTimeMillis()) {
-				carrier.sendMessage(Text.literal("§c该实体冷却中，剩余" + ((cooldownEnd - System.currentTimeMillis()) / 1000 + 1) + "秒"), false);
+				carrier.sendMessage(Text.literal("§c哈..哈~...待会再抱吧，剩余" + ((cooldownEnd - System.currentTimeMillis()) / 1000 + 1) + "秒"), false);
 				return;
 			}
 
 			CarriedEntityData currentData = CARRIED_ENTITIES.get(carrier);
 			if (currentData != null && currentData.entity == target) {
 				releaseCarried(carrier, target);
-				carrier.sendMessage(Text.literal("§a你放下了" + target.getName().getString()), false);
+				carrier.sendMessage(Text.literal("§a放下了" + target.getName().getString()), false);
 				return;
 			}
 
@@ -500,7 +500,7 @@ public class Clairvoyance implements ModInitializer {
 
 
 			if (CARRIED_ENTITIES.containsKey(carrier)) {
-				carrier.sendMessage(Text.literal("§c你已经抱起了一个，先放下她"), false);
+				carrier.sendMessage(Text.literal("§c已经抱了一个，先放下她"), false);
 				return;
 			}
 			if (CARRIED_BY.containsKey(target)) {
@@ -510,7 +510,7 @@ public class Clairvoyance implements ModInitializer {
 
 			if (target instanceof ServerPlayerEntity carriedPlayer) {
 				if (CARRIED_ENTITIES.containsKey(carriedPlayer)) {
-					carrier.sendMessage(Text.literal("§c§k1§r正在抱起其他实体，无法抱起"), false);
+					carrier.sendMessage(Text.literal("§c§k1§r正在抱起其他存在，无法抱起"), false);
 					return;
 				}
 				carriedPlayer.sendMessage(Text.literal("§e你被 " + carrier.getName().getString() + " 抱起来了，按潜行键挣脱"), false);
@@ -556,7 +556,7 @@ public class Clairvoyance implements ModInitializer {
 				Vec3d lookVec = carrier.getRotationVec(1.0f);
 				Vec3d pos = carrier.getEyePos().add(lookVec.multiply(1.5)).subtract(0, 0.5, 0);
 				carried.refreshPositionAndAngles(pos.x, pos.y, pos.z, carrier.getYaw(), carrier.getPitch());
-				carrier.sendMessage(Text.literal("§a你放下了抱起的实体"), false);
+				carrier.sendMessage(Text.literal("§a放下了抱起的实体"), false);
 			} else {
 				carrier.sendMessage(Text.literal("§c实体已经死亡，无法放下"), false);
 			}
