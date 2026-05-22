@@ -10,29 +10,30 @@ import net.minecraft.client.render.item.model.special.SpecialModelRenderer;
 import net.minecraft.client.util.SkinTextures;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.RotationAxis;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
+
 import java.util.Set;
 
 public abstract class BodyPartSpecialModelRenderer implements SpecialModelRenderer<BodyPartSpecialModelRenderer.Data> {
-    public record Data(RenderLayer layer) {
+    public record Data(RenderLayer layer, String armModel) {
         static Data of(SkinTextures textures) {
-            return new Data(RenderLayer.getEntityTranslucent(textures.texture()));
+            return new Data(RenderLayer.getEntityTranslucent(textures.texture()), "default");
         }
     }
 
     private final Data defaultData;
 
     public BodyPartSpecialModelRenderer(LoadedEntityModels entityModels) {
-        // 获取当前登录玩家的档案（用于默认纹理）
         var session = MinecraftClient.getInstance().getSession();
         GameProfile profile = new GameProfile(session.getUuidOrNull(), session.getUsername());
         SkinTextures textures = MinecraftClient.getInstance().getSkinProvider().getSkinTextures(profile);
-        this.defaultData = Data.of(textures);
+        this.defaultData = new Data(RenderLayer.getEntityTranslucent(textures.texture()), "default");
     }
 
     @Override
@@ -47,13 +48,13 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
         matrices.scale(-1.0F, -1.0F, 1.0F);
         matrices.translate(0.0F, 0.0F, 0.0F);
 
-        renderModel(matrices, vertexConsumers, renderLayer, light, overlay);
+        renderModel(matrices, vertexConsumers, renderLayer, light, overlay, actualData);
 
         matrices.pop();
     }
 
     protected abstract void renderModel(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-                                        RenderLayer renderLayer, int light, int overlay);
+                                        RenderLayer renderLayer, int light, int overlay, Data data);
 
     @Nullable
     @Override
@@ -65,10 +66,19 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
         SkinTextures textures = MinecraftClient.getInstance().getSkinProvider()
                 .getSkinTextures(resolved.gameProfile(), null);
         if (textures == null) return null;
-        return Data.of(textures);
+
+        String armModel = "default";
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData != null) {
+            String model = customData.copyNbt().getString("arm_model").orElse("");
+            if (!model.isEmpty()) {
+                armModel = model;
+            }
+        }
+
+        return new Data(RenderLayer.getEntityTranslucent(textures.texture()), armModel);
     }
 
-    // 子类必须实现 collectVertices
     @Override
     public abstract void collectVertices(Set<Vector3f> vertices);
 

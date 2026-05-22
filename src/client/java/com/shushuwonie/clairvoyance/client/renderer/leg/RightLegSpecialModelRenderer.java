@@ -21,7 +21,7 @@ public class RightLegSpecialModelRenderer extends BodyPartSpecialModelRenderer {
 
     @Override
     protected void renderModel(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-                               RenderLayer renderLayer, int light, int overlay) {
+                               RenderLayer renderLayer, int light, int overlay, Data data) {
         model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, overlay, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 

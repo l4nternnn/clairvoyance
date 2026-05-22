@@ -5,7 +5,9 @@ import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -88,6 +90,14 @@ public class LeftLegBlock extends BlockWithEntity {
             } else if (placer instanceof PlayerEntity player) {
                 legEntity.setOwner(new ProfileComponent(player.getGameProfile()));
             }
+            // 读取物品栈中的手臂模型覆盖标记
+            NbtComponent customData = itemStack.get(DataComponentTypes.CUSTOM_DATA);
+            if (customData != null) {
+                NbtCompound nbt = customData.copyNbt();
+                if (nbt.contains("arm_model")) {
+                    nbt.getString("arm_model").ifPresent(legEntity::setSkinType);
+                }
+            }
             legEntity.markDirty();
         }
     }
@@ -105,18 +115,5 @@ public class LeftLegBlock extends BlockWithEntity {
         return ActionResult.SUCCESS;
     }
 
-    @Override
-    public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-        super.onStateReplaced(state, world, pos, moved);
-        // 当方块被真正破坏（不是被移动或替换）时生成粒子
-        if (!moved) {
-            // 生成末影传送门粒子，可以调整数量和范围
-            for (int i = 0; i < 30; i++) {
-                double x = pos.getX() + world.random.nextDouble();
-                double y = pos.getY() + world.random.nextDouble();
-                double z = pos.getZ() + world.random.nextDouble();
-                world.spawnParticles(ParticleTypes.PORTAL, x, y, z, 1, 0, 0, 0, 0);
-            }
-        }
-    }
+
 }

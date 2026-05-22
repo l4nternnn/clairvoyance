@@ -42,6 +42,14 @@ public class GiveBodyPartCommand {
                                                 "torso",
                                                 false
                                         ))
+                                        .then(CommandManager.literal("slim")
+                                                .executes(ctx -> giveBodyPart(
+                                                        EntityArgumentType.getPlayer(ctx, "target"),
+                                                        EntityArgumentType.getPlayer(ctx, "source"),
+                                                        "torso",
+                                                        true
+                                                ))
+                                        )
                                 )
                                 .then(CommandManager.literal("left_arm")
                                         .executes(ctx -> giveBodyPart(
@@ -82,6 +90,14 @@ public class GiveBodyPartCommand {
                                                 "left_leg",
                                                 false
                                         ))
+                                        .then(CommandManager.literal("slim")
+                                                .executes(ctx -> giveBodyPart(
+                                                        EntityArgumentType.getPlayer(ctx, "target"),
+                                                        EntityArgumentType.getPlayer(ctx, "source"),
+                                                        "left_leg",
+                                                        true
+                                                ))
+                                        )
                                 )
                                 .then(CommandManager.literal("right_leg")
                                         .executes(ctx -> giveBodyPart(
@@ -90,6 +106,14 @@ public class GiveBodyPartCommand {
                                                 "right_leg",
                                                 false
                                         ))
+                                        .then(CommandManager.literal("slim")
+                                                .executes(ctx -> giveBodyPart(
+                                                        EntityArgumentType.getPlayer(ctx, "target"),
+                                                        EntityArgumentType.getPlayer(ctx, "source"),
+                                                        "right_leg",
+                                                        true
+                                                ))
+                                        )
                                 )
                         )
                 )
@@ -150,8 +174,8 @@ public class GiveBodyPartCommand {
         }
         ItemStack stack = new ItemStack(item);
         stack.set(DataComponentTypes.PROFILE, new ProfileComponent(source.getGameProfile()));
-        // 手臂部位存储模型类型覆盖
-        if (slim && (part.equals("left_arm") || part.equals("right_arm"))) {
+        // 存储手臂模型类型覆盖（所有部位都支持slim标签，用于换肤）
+        if (slim) {
             NbtCompound nbt = new NbtCompound();
             nbt.putString("arm_model", "slim");
             stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));

@@ -103,20 +103,7 @@ public class RightArmBlock extends BlockWithEntity {
         }
     }
 
-    @Override
-    public void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-        super.onStateReplaced(state, world, pos, moved);
-        // 当方块被真正破坏（不是被移动或替换）时生成粒子
-        if (!moved) {
-            // 生成末影传送门粒子，可以调整数量和范围
-            for (int i = 0; i < 30; i++) {
-                double x = pos.getX() + world.random.nextDouble();
-                double y = pos.getY() + world.random.nextDouble();
-                double z = pos.getZ() + world.random.nextDouble();
-                world.spawnParticles(ParticleTypes.PORTAL, x, y, z, 1, 0, 0, 0, 0);
-            }
-        }
-    }
+
 
     @Override
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {

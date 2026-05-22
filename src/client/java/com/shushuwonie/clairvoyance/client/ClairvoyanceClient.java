@@ -134,16 +134,17 @@ public class ClairvoyanceClient implements ClientModInitializer {
 			}
 			if (markKey.wasPressed()) {
 				ItemStack mainHand = client.player.getMainHandStack();
-				if (client.player.isSneaking() && mainHand.isEmpty() && client.player.getOffHandStack().isEmpty()) {
-					Entity target = getTargetEntity(client, 5.0);
-					if (target instanceof LivingEntity ) {
-						ClientPlayNetworking.send(new CarryEntityPayload(target.getId()));
-						client.player.sendMessage(Text.literal("§e尝试抱起实体"), true);
-					} else {
-						client.player.sendMessage(Text.literal("§c请对准一个可抱起的生物"), true);
-					}
-					return;
-				}
+				// V键抱起功能已移除
+				// if (client.player.isSneaking() && mainHand.isEmpty() && client.player.getOffHandStack().isEmpty()) {
+				// 	Entity target = getTargetEntity(client, 5.0);
+				// 	if (target instanceof LivingEntity ) {
+				// 		ClientPlayNetworking.send(new CarryEntityPayload(target.getId()));
+				// 		client.player.sendMessage(Text.literal("§e尝试抱起实体"), true);
+				// 	} else {
+				// 		client.player.sendMessage(Text.literal("§c请对准一个可抱起的生物"), true);
+				// 	}
+				// 	return;
+				// }
 				if (mainHand.getItem() == Evil_Eyes.CLAIRVOYANCE_ITEM) {
 					// 同时检测实体和方块射线，取近的
 					Vec3d eye = client.player.getEyePos();

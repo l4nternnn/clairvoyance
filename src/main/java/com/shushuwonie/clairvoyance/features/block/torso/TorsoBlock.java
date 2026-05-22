@@ -5,7 +5,9 @@ import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -106,6 +108,14 @@ public class TorsoBlock extends BlockWithEntity {
                 torsoEntity.setOwner(itemProfile);
             } else if (placer instanceof PlayerEntity player) {
                 torsoEntity.setOwner(new ProfileComponent(player.getGameProfile()));
+            }
+            // 读取物品栈中的手臂模型覆盖标记
+            NbtComponent customData = itemStack.get(DataComponentTypes.CUSTOM_DATA);
+            if (customData != null) {
+                NbtCompound nbt = customData.copyNbt();
+                if (nbt.contains("arm_model")) {
+                    nbt.getString("arm_model").ifPresent(torsoEntity::setSkinType);
+                }
             }
             torsoEntity.markDirty();
         }

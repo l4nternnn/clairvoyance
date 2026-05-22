@@ -71,7 +71,7 @@ public class LeftArmBlockEntityRenderer implements BlockEntityRenderer<LeftArmBl
                     .getSkinTextures(fallbackProfile)
                     .texture();
         }
-        return Identifier.of("clairvoyance", "textures/block/torso.png");
+        return Identifier.of("clairvoyance", "textures/block/1torso.png");
     }
 
     private float getYawFromDirection(Direction direction) {

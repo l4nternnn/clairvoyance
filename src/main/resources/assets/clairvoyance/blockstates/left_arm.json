@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "clairvoyance:block/model_left_arm" },
-    "facing=east":  { "model": "clairvoyance:block/model_left_arm", "y": 90 },
-    "facing=south": { "model": "clairvoyance:block/model_left_arm", "y": 180 },
-    "facing=west":  { "model": "clairvoyance:block/model_left_arm", "y": 270 }
+    "facing=north": { "model": "clairvoyance:block/left_arm" },
+    "facing=east":  { "model": "clairvoyance:block/left_arm", "y": 90 },
+    "facing=south": { "model": "clairvoyance:block/left_arm", "y": 180 },
+    "facing=west":  { "model": "clairvoyance:block/left_arm", "y": 270 }
   }
 }

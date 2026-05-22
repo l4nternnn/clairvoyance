@@ -21,8 +21,7 @@ public class TorsoSpecialModelRenderer extends BodyPartSpecialModelRenderer {
 
     @Override
     protected void renderModel(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-                               RenderLayer renderLayer, int light, int overlay) {
-        // 注意：这里的参数顺序需与 TorsoModel 的 render 方法匹配
+                               RenderLayer renderLayer, int light, int overlay, Data data) {
         model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, overlay, 1.0F, 1.0F, 1.0F, 1.0F);
     }
 

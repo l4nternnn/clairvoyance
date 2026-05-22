@@ -34,10 +34,14 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.*;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.DisplayEntity.ItemDisplayEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -48,7 +52,11 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -59,6 +67,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import net.minecraft.block.Block;
+import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 
 public class Clairvoyance implements ModInitializer {
 	public static final String MOD_ID = "clairvoyance";
@@ -75,11 +86,24 @@ public class Clairvoyance implements ModInitializer {
 	public static final Map<ServerPlayerEntity, CarriedEntityData> CARRIED_ENTITIES = new ConcurrentHashMap<>();
 	// 被抱实体 -> 抱起者（用于玩家主动挣脱时快速找到抱起者）
 	public static final Map<Entity, ServerPlayerEntity> CARRIED_BY = new ConcurrentHashMap<>();
+	// 抱起冷却：实体 -> 冷却结束时间戳
+	public static final Map<Entity, Long> CARRIED_COOLDOWN = new ConcurrentHashMap<>();
 	// 辅助记录实体数据
 	public static class CarriedEntityData {
 		public final Entity entity;
+		public final boolean originalFlying;
+		public final boolean originalAllowFlying;
+		public final boolean originalInvulnerable;
+
 		public CarriedEntityData(Entity entity) {
+			this(entity, false, false, false);
+		}
+
+		public CarriedEntityData(Entity entity, boolean originalFlying, boolean originalAllowFlying, boolean originalInvulnerable) {
 			this.entity = entity;
+			this.originalFlying = originalFlying;
+			this.originalAllowFlying = originalAllowFlying;
+			this.originalInvulnerable = originalInvulnerable;
 		}
 	}
 
@@ -318,6 +342,12 @@ public class Clairvoyance implements ModInitializer {
 				if (!carried.isAlive()) {
 					CARRIED_ENTITIES.remove(carrier);
 					CARRIED_BY.remove(carried);
+					if (carried instanceof ServerPlayerEntity carriedPlayer) {
+						carriedPlayer.getAbilities().flying = entry.getValue().originalFlying;
+						carriedPlayer.getAbilities().allowFlying = entry.getValue().originalAllowFlying;
+						carriedPlayer.getAbilities().invulnerable = entry.getValue().originalInvulnerable;
+						carriedPlayer.sendAbilitiesUpdate();
+					}
 					continue;
 				}
 
@@ -342,10 +372,50 @@ public class Clairvoyance implements ModInitializer {
 					}
 				}
 			}
+			// 清理过期的抱起冷却
+			long now = System.currentTimeMillis();
+			CARRIED_COOLDOWN.values().removeIf(expiry -> expiry <= now);
 		});
 
-		// 玩家断线清理所有观看/携带状态
-		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+		// Player death drops body parts as item display entities
+		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+			if (entity instanceof ServerPlayerEntity player && player.getCommandTags().contains("dead_body")) {
+				ServerWorld world = (ServerWorld) player.getWorld();
+				BlockPos deathPos = player.getBlockPos();
+				ProfileComponent profile = new ProfileComponent(player.getGameProfile());
+				String playerName = player.getName().getString();
+
+				Item[] partItems = new Item[]{
+					Assembly_ModItems.TORSO_ITEM,
+					Assembly_ModItems.LEFT_ARM_ITEM,
+					Assembly_ModItems.RIGHT_ARM_ITEM,
+					Assembly_ModItems.LEFT_LEG_ITEM,
+					Assembly_ModItems.RIGHT_LEG_ITEM
+				};
+				String[] chineseNames = new String[]{"躯干", "左臂", "右臂", "左腿", "右腿"};
+				double[] offsetsX = new double[]{0, -1.5, 1.5, 0, 0};
+				double[] offsetsZ = new double[]{0, 0, 0, -1.5, 1.5};
+
+				for (int i = 0; i < 5; i++) {
+					ItemStack stack = new ItemStack(partItems[i]);
+					stack.set(DataComponentTypes.PROFILE, profile);
+					Text displayName = Text.literal("§6§k13§4" + playerName + "§r§6§k13§r" + "的" + chineseNames[i]);
+					stack.set(DataComponentTypes.CUSTOM_NAME, displayName);
+
+					ItemDisplayEntity display = EntityType.ITEM_DISPLAY.create((World) world, SpawnReason.TRIGGERED);
+					if (display != null) {
+						display.setItemStack(stack);
+						display.setPosition(
+							deathPos.getX() + 0.5 + offsetsX[i],
+							deathPos.getY() + 0.3,
+							deathPos.getZ() + 0.5 + offsetsZ[i]
+						);
+						world.spawnEntity(display);
+					}
+				}
+			}
+		});
+			ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			ServerPlayerEntity player = handler.getPlayer();
 			CameraWatchManager.stopWatching(player, server);
 			Evil_Eyes.forceStopWatching(player, server);
@@ -353,6 +423,7 @@ public class Clairvoyance implements ModInitializer {
 			VIEWING_MAP.remove(player);
 			VIEWING_MAP.values().removeIf(v -> v == player);
 			VIEW_MODE_PREFERENCE.remove(player.getUuid());
+			// 清理该玩家作为载体的数据
 			CarriedEntityData carriedData = CARRIED_ENTITIES.remove(player);
 			if (carriedData != null) {
 				Entity carried = carriedData.entity;
@@ -360,11 +431,29 @@ public class Clairvoyance implements ModInitializer {
 				carried.setNoGravity(false);
 				carried.setInvulnerable(false);
 				carried.setSilent(false);
+				if (carried instanceof ServerPlayerEntity carriedPlayer) {
+					carriedPlayer.getAbilities().flying = carriedData.originalFlying;
+					carriedPlayer.getAbilities().allowFlying = carriedData.originalAllowFlying;
+					carriedPlayer.getAbilities().invulnerable = carriedData.originalInvulnerable;
+					carriedPlayer.sendAbilitiesUpdate();
+				}
 				if (carried instanceof MobEntity mob) {
 					mob.setAiDisabled(false);
 				}
 			}
-			CARRIED_BY.entrySet().removeIf(e -> e.getValue() == player);
+			// 清理该玩家作为被抱者的数据
+			ServerPlayerEntity theirCarrier = CARRIED_BY.remove(player);
+			if (theirCarrier != null) {
+				CarriedEntityData removedData = CARRIED_ENTITIES.remove(theirCarrier);
+				if (removedData != null) {
+					player.getAbilities().flying = removedData.originalFlying;
+					player.getAbilities().allowFlying = removedData.originalAllowFlying;
+					player.getAbilities().invulnerable = removedData.originalInvulnerable;
+					player.sendAbilitiesUpdate();
+				}
+			}
+			// 清理该玩家的冷却记录
+			CARRIED_COOLDOWN.remove(player);
 		});
 
 		//		// 处理搬运实体请求
@@ -380,6 +469,13 @@ public class Clairvoyance implements ModInitializer {
 			Entity target = world.getEntityById(payload.entityId());
 			if (target == null) return;
 
+			// 检查冷却
+			Long cooldownEnd = CARRIED_COOLDOWN.get(target);
+			if (cooldownEnd != null && cooldownEnd > System.currentTimeMillis()) {
+				carrier.sendMessage(Text.literal("§c该实体冷却中，剩余" + ((cooldownEnd - System.currentTimeMillis()) / 1000 + 1) + "秒"), false);
+				return;
+			}
+
 			CarriedEntityData currentData = CARRIED_ENTITIES.get(carrier);
 			if (currentData != null && currentData.entity == target) {
 				releaseCarried(carrier, target);
@@ -387,8 +483,12 @@ public class Clairvoyance implements ModInitializer {
 				return;
 			}
 
+			boolean savedFlying = false, savedAllowFlying = false, savedInvulnerable = false;
 			if (target instanceof ServerPlayerEntity carriedPlayer) {
-				// 保存被抱玩家的原始能力（可选，恢复时使用）
+				// 保存被抱玩家的原始能力（恢复时使用）
+				savedFlying = carriedPlayer.getAbilities().flying;
+				savedAllowFlying = carriedPlayer.getAbilities().allowFlying;
+				savedInvulnerable = carriedPlayer.getAbilities().invulnerable;
 				carriedPlayer.setNoGravity(true);
 				carriedPlayer.getAbilities().flying = true;
 				carriedPlayer.getAbilities().allowFlying = true;
@@ -428,7 +528,7 @@ public class Clairvoyance implements ModInitializer {
 //			target.setInvulnerable(true);
 			target.setSilent(true);
 
-			CARRIED_ENTITIES.put(carrier, new CarriedEntityData(target));
+			CARRIED_ENTITIES.put(carrier, new CarriedEntityData(target, savedFlying, savedAllowFlying, savedInvulnerable));
 			CARRIED_BY.put(target, carrier);
 			carrier.sendMessage(Text.literal("§a你抱起了 " + target.getName().getString()), false);
 		});
@@ -444,6 +544,12 @@ public class Clairvoyance implements ModInitializer {
 				carried.setNoGravity(false);
 //				carried.setInvulnerable(false);
 				carried.setSilent(false);
+				if (carried instanceof ServerPlayerEntity carriedPlayer) {
+					carriedPlayer.getAbilities().flying = data.originalFlying;
+					carriedPlayer.getAbilities().allowFlying = data.originalAllowFlying;
+					carriedPlayer.getAbilities().invulnerable = data.originalInvulnerable;
+					carriedPlayer.sendAbilitiesUpdate();
+				}
 				if (carried instanceof MobEntity mob) {
 					mob.setAiDisabled(false);
 				}
@@ -464,6 +570,12 @@ public class Clairvoyance implements ModInitializer {
 				if (!carried.isAlive()) {
 					CARRIED_ENTITIES.remove(carrier);
 					CARRIED_BY.remove(carried);
+					if (carried instanceof ServerPlayerEntity carriedPlayer) {
+						carriedPlayer.getAbilities().flying = entry.getValue().originalFlying;
+						carriedPlayer.getAbilities().allowFlying = entry.getValue().originalAllowFlying;
+						carriedPlayer.getAbilities().invulnerable = entry.getValue().originalInvulnerable;
+						carriedPlayer.sendAbilitiesUpdate();
+					}
 					continue;
 				}
 
@@ -551,12 +663,8 @@ public class Clairvoyance implements ModInitializer {
 
 		}
 
-
-
-
-
-
-		private static void releaseCarried(ServerPlayerEntity carrier, Entity carried) {
+	private static void releaseCarried(ServerPlayerEntity carrier, Entity carried) {
+		CarriedEntityData data = CARRIED_ENTITIES.get(carrier);
 		CARRIED_ENTITIES.remove(carrier);
 		CARRIED_BY.remove(carried);
 		carried.setNoGravity(false);
@@ -566,19 +674,17 @@ public class Clairvoyance implements ModInitializer {
 			mob.setAiDisabled(false);
 		}
 		if (carried instanceof ServerPlayerEntity carriedPlayer) {
-			carriedPlayer.getAbilities().flying = false;
-			carriedPlayer.getAbilities().allowFlying = false;
-			carriedPlayer.getAbilities().invulnerable = false;
+			carriedPlayer.getAbilities().flying = data != null ? data.originalFlying : false;
+			carriedPlayer.getAbilities().allowFlying = data != null ? data.originalAllowFlying : false;
+			carriedPlayer.getAbilities().invulnerable = data != null ? data.originalInvulnerable : false;
 			carriedPlayer.sendAbilitiesUpdate();
 		}
+		// 设置5秒抱起冷却
+		CARRIED_COOLDOWN.put(carried, System.currentTimeMillis() + 5000);
 		// 放下位置（使用原本的计算，但需要强制同步）
 		Vec3d lookVec = carrier.getRotationVec(1.0f);
 		Vec3d pos = carrier.getEyePos().add(lookVec.multiply(0.5));
 		carried.refreshPositionAndAngles(pos.x, pos.y, pos.z, carrier.getYaw(), carrier.getPitch());
-
-		if (carried instanceof ServerPlayerEntity carriedPlayer) {
-			carriedPlayer.networkHandler.requestTeleport(pos.x, pos.y, pos.z, carriedPlayer.getYaw(), carriedPlayer.getPitch());
-		}
 		if (carried instanceof ServerPlayerEntity carriedPlayer) {
 			carriedPlayer.networkHandler.requestTeleport(pos.x, pos.y, pos.z, carrier.getYaw(), carrier.getPitch());
 		}
