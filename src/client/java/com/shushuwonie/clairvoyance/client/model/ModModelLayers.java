@@ -20,4 +20,10 @@ public class ModModelLayers {
     public static final EntityModelLayer RIGHT_LEG = new EntityModelLayer(Identifier.
             of("clairvoyance", "right_leg"), "main");
 
+    public static final EntityModelLayer LEFT_ARM_SLIM = new EntityModelLayer(Identifier.
+            of("clairvoyance", "left_arm"), "slim");
+
+    public static final EntityModelLayer RIGHT_ARM_SLIM = new EntityModelLayer(Identifier.
+            of("clairvoyance", "right_arm"), "slim");
+
 }

@@ -9,7 +9,9 @@ import com.shushuwonie.clairvoyance.client.gui.bodyback.BodyPartScreen;
 import com.shushuwonie.clairvoyance.client.gui.openback.OtherPlayerInventoryScreen;
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.arm.LeftArmModel;
+import com.shushuwonie.clairvoyance.client.model.arm.LeftArmSlimModel;
 import com.shushuwonie.clairvoyance.client.model.arm.RightArmModel;
+import com.shushuwonie.clairvoyance.client.model.arm.RightArmSlimModel;
 import com.shushuwonie.clairvoyance.client.model.leg.LeftLegModel;
 import com.shushuwonie.clairvoyance.client.model.leg.RightLegModel;
 import com.shushuwonie.clairvoyance.client.model.torso.TorsoModel;
@@ -118,7 +120,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ModNetworking.registerS2CPackets();
 
 		// 初始化其他模块
-		com.shushuwonie.client.evil_eyes.Evil_EyesClient.initialize();
+		com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.initialize();
 		com.shushuwonie.client.gazeguidance.GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
 		// 按键绑定
 		configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_U, "category.clairvoyance"));
@@ -235,13 +237,13 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				UUID uuid = packet.entityUuid();
 				// 清空信号：同步清空本地标记和GUI列表
 				if (uuid.getMostSignificantBits() == 0 && uuid.getLeastSignificantBits() == 0) {
-					com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities.clear();
-					com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+					com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.clear();
+					com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 					return;
 				}
 				long expire = context.client().world != null ? context.client().world.getTime() + 60 : System.currentTimeMillis() / 50 + 60;
-				com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities.put(uuid, expire);
-				com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.put(uuid, expire);
+				com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 			});
 		});
 
@@ -250,16 +252,19 @@ public class ClairvoyanceClient implements ClientModInitializer {
 			context.client().execute(() -> imagesEnabled = packet.enabled());
 		});
 
-		// 5. 选择观看（旧系统）
-//		ClientPlayNetworking.registerGlobalReceiver(SelectViewPayload.ID, (packet, context) -> {
-//			context.client().execute(() -> Evil_EyesClient.onSelectView(packet.entityUuid()));
-//		});
+		// 5. 选择观看（根据服务端指示的观看模式）
+		ClientPlayNetworking.registerGlobalReceiver(SelectViewPayload.ID, (packet, context) -> {
+			context.client().execute(() -> {
+				CameraWatchClientHandler.onUnbind(); // 先清理现代模式
+				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.onSelectView(packet.entityUuid());
+			});
+		});
 
 		// 6. 强制退出观看（旧系统）
 		ClientPlayNetworking.registerGlobalReceiver(ForceExitViewPayload.ID, (packet, context) -> {
 			context.client().execute(() -> {
 				CameraWatchClientHandler.onUnbind();
-				com.shushuwonie.client.evil_eyes.Evil_EyesClient.exitViewMode(context.client());
+				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.exitViewMode(context.client());
 			});
 		});
 
@@ -483,6 +488,9 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				ModBlockEntities.RIGHT_ARM_BLOCK_ENTITY,
 				RightArmBlockEntityRenderer::new
 		);
+			// Slim手臂模型
+			EntityModelLayerRegistry.registerModelLayer(ModModelLayers.LEFT_ARM_SLIM, LeftArmSlimModel::getTexturedModelData);
+			EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RIGHT_ARM_SLIM, RightArmSlimModel::getTexturedModelData);
 
 		//左腿
 		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.LEFT_LEG, LeftLegModel::getTexturedModelData);

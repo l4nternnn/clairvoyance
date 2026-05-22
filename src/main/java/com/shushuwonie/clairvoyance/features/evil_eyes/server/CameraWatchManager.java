@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CameraWatchManager {
     private static final Map<UUID, CameraSession> SESSIONS = new ConcurrentHashMap<>();
     private static final Map<UUID, Float> smoothYaws = new ConcurrentHashMap<>();
+    private static final Map<UUID, Vec3d> prevCamPos = new ConcurrentHashMap<>();
+    private static final Map<UUID, Double> prevCamDistance = new ConcurrentHashMap<>();
 
     private record CameraSession(UUID targetUuid, long startTick) {}
 
@@ -44,6 +46,8 @@ public class CameraWatchManager {
         UUID uuid = viewer.getUuid();
         SESSIONS.remove(uuid);
         smoothYaws.remove(uuid);
+        prevCamPos.remove(uuid);
+        prevCamDistance.remove(uuid);
         ServerPlayNetworking.send(viewer, new CameraWatchUnbindS2CPacket());
     }
 
@@ -68,35 +72,55 @@ public class CameraWatchManager {
 
         CameraOffset offset = getOffset(viewer);
         double distance = offset.distance;
+        UUID viewerId = viewer.getUuid();
 
         // 对实体 yaw 做平滑，水平方向跟随实体朝向
-        UUID viewerId = viewer.getUuid();
         float targetYaw = target.getYaw();
         float prevSmoothYaw = smoothYaws.getOrDefault(viewerId, targetYaw);
-        float lerpFactor = 0.3f;
-        float smoothYaw = prevSmoothYaw + MathHelper.wrapDegrees(targetYaw - prevSmoothYaw) * lerpFactor;
+        float smoothYaw = prevSmoothYaw + MathHelper.wrapDegrees(targetYaw - prevSmoothYaw) * 0.5f;
         smoothYaws.put(viewerId, smoothYaw);
 
         // 实体视线方向: (-sin(yaw), 0, cos(yaw))，背后=反方向=(sin(yaw), 0, -cos(yaw))
-        Vec3d targetEye = target.getEyePos();
+        Vec3d targetPos = target.getPos();
         double radYaw = Math.toRadians(smoothYaw);
         double bx = Math.sin(radYaw);
         double bz = -Math.cos(radYaw);
-        Vec3d idealEnd = target.getPos().add(bx * distance, 1.5, bz * distance);
+        Vec3d targetEye = target.getEyePos();
+        Vec3d idealEnd = targetPos.add(bx * distance, 1.5, bz * distance);
 
         // 射线检测（从实体眼睛到摄像机位置）
         RaycastContext ctx = new RaycastContext(targetEye, idealEnd,
                 RaycastContext.ShapeType.COLLIDER,
                 RaycastContext.FluidHandling.NONE, target);
         BlockHitResult hit = world.raycast(ctx);
-        Vec3d camPos;
+
+        // 计算有效距离，并对碰撞变化做平滑（防止穿墙时相机突然跳出/拉近）
+        double rawDist;
         if (hit.getType() == HitResult.Type.BLOCK) {
             double hitDist = hit.getPos().distanceTo(targetEye);
-            double finalDist = Math.max(0.5, Math.min(distance, hitDist - 0.2));
-            camPos = target.getPos().add(bx * finalDist, 1.5, bz * finalDist);
+            rawDist = Math.max(0.5, hitDist - 0.2);
         } else {
-            camPos = idealEnd;
+            rawDist = distance;
         }
+        Double prevDist = prevCamDistance.get(viewerId);
+        if (prevDist != null) {
+            rawDist = prevDist + (rawDist - prevDist) * 0.15;
+        }
+        rawDist = Math.max(0.5, rawDist);
+        prevCamDistance.put(viewerId, rawDist);
+
+        // 计算理想相机位置（使用平滑后的距离）
+        Vec3d rawCamPos = targetPos.add(bx * rawDist, 1.5, bz * rawDist);
+
+        // 对相机位置做平滑（防止目标旋转/移动导致画面突然跳跃）
+        Vec3d prevPos = prevCamPos.get(viewerId);
+        Vec3d camPos;
+        if (prevPos != null) {
+            camPos = prevPos.lerp(rawCamPos, 0.35);
+        } else {
+            camPos = rawCamPos;
+        }
+        prevCamPos.put(viewerId, camPos);
 
         // 摄像机始终看向实体眼睛
         double dx = targetEye.x - camPos.x;
@@ -135,6 +159,6 @@ public class CameraWatchManager {
 
     private static CameraOffset getOffset(ServerPlayerEntity player) {
         return PLAYER_OFFSETS.getOrDefault(player.getUuid(),
-                new CameraOffset(0f, 0f, 4.0f)); // 默认背后4格，方向随实体视线
+                new CameraOffset(0f, 0f, 4.0f));
     }
 }

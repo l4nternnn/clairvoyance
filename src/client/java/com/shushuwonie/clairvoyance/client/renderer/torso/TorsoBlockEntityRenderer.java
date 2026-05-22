@@ -4,6 +4,7 @@ import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.torso.TorsoModel;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlock;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlockEntity;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -19,12 +20,12 @@ import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 public class TorsoBlockEntityRenderer implements BlockEntityRenderer<TorsoBlockEntity> {
-//    private final ModelPart head;
     private final TorsoModel model;
 
     public TorsoBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
-//        this.head = ctx.getLayerModelPart(EntityModelLayers.PLAYER_HEAD);
         this.model = new TorsoModel(ctx.getLayerModelPart(ModModelLayers.TORSO));
     }
 
@@ -37,23 +38,33 @@ public class TorsoBlockEntityRenderer implements BlockEntityRenderer<TorsoBlockE
         matrices.push();
         matrices.translate(0.5F, 0.0F, 0.5F);
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0F - yaw));
-        matrices.scale(1.0F, -1.0F, -1.0F);
-        matrices.translate(0.0F, -0.2F, 0.0F);
+        matrices.scale(1.0F, -1.0F, 1.0F);
+        matrices.translate(-0.0F, -0.2F, -0.0F);
 
-        Identifier texture = getSkinTexture(entity.getOwner());
+
+        Identifier texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(renderLayer);
-//        head.render(matrices, vertexConsumer, light, OverlayTexture.DEFAULT_UV);
-        model.setHeadRotation(0, yaw, 0); // 如果需要动画可传入参数
+        model.setHeadRotation(0, yaw, 0);
         model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, OverlayTexture.DEFAULT_UV);
         matrices.pop();
     }
 
-    private Identifier getSkinTexture(@Nullable ProfileComponent owner) {
+    private Identifier getSkinTexture(@Nullable ProfileComponent owner, @Nullable UUID playerUuid) {
         if (owner != null && owner.gameProfile() != null) {
+            GameProfile profile = owner.gameProfile();
+            if (!profile.getProperties().get("textures").isEmpty()) {
+                return MinecraftClient.getInstance()
+                        .getSkinProvider()
+                        .getSkinTextures(profile)
+                        .texture();
+            }
+        }
+        if (playerUuid != null) {
+            GameProfile fallbackProfile = new GameProfile(playerUuid, "");
             return MinecraftClient.getInstance()
                     .getSkinProvider()
-                    .getSkinTextures(owner.gameProfile())
+                    .getSkinTextures(fallbackProfile)
                     .texture();
         }
         return Identifier.of("clairvoyance", "textures/block/torso.png");

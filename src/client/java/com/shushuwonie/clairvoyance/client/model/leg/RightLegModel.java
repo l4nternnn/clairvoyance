@@ -24,7 +24,7 @@ public class RightLegModel extends SkullBlockEntityModel {
 
         rightLeg.addChild("right_pants",
                 ModelPartBuilder.create().uv(0, 32).cuboid(-2.0F, -12.0F, -2.0F, 4.0F, 12.0F, 4.0F, new Dilation(0.25F)),
-                ModelTransform.origin(-0.0f,-6.0f,0.0f));
+                ModelTransform.origin(-0.0f,-0.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }
 

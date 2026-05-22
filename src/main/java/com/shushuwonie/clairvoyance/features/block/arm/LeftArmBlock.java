@@ -5,17 +5,23 @@ import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -87,8 +93,22 @@ public class LeftArmBlock extends BlockWithEntity {
             } else if (placer instanceof PlayerEntity player) {
                 armEntity.setOwner(new ProfileComponent(player.getGameProfile()));
             }
+            // 读取物品栈中的手臂模型覆盖标记
+            NbtComponent customData = itemStack.get(DataComponentTypes.CUSTOM_DATA);
+            if (customData != null) {
+                NbtCompound nbt = customData.copyNbt();
+                if (nbt.contains("arm_model")) {
+                    nbt.getString("arm_model").ifPresent(armEntity::setSkinType);
+                }
+            }
             armEntity.markDirty();
         }
+    }
+
+//    @Override
+    public Identifier getParticleTexture(BlockState state) {
+        // 可以改为任意你想要的纹理，例如石头的粒子
+        return Identifier.of("minecraft", "block/stone");
     }
 
     @Override

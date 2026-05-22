@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
 import com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager;
 import com.shushuwonie.clairvoyance.util.RaycastHelper;
 import net.minecraft.command.CommandRegistryAccess;
@@ -72,13 +73,26 @@ public class WatchCommand {
             return 1;
         }
 
+        // 检查配置限制
+        if (Evil_Eyes.configManager == null) {
+            viewer.sendMessage(Text.literal("§c配置未初始化"), false);
+            return 0;
+        }
+        int stage = Evil_Eyes.getPlayerStage(viewer, Evil_Eyes.configManager);
+        if (!Evil_Eyes.configManager.canMark(viewer.getUuid(), stage)) {
+            viewer.sendMessage(Text.literal("§c今日观看次数已达上限"), false);
+            return 0;
+        }
+
         // 否则尝试观看准星指向的实体
         Entity target = RaycastHelper.getTargetEntity(viewer, 50.0);
         if (target == null) {
             viewer.sendMessage(Text.literal("§c未对准任何实体"), false);
             return 0;
         }
-        CameraWatchManager.startWatching(viewer, target.getUuid(), viewer.getServer());
+        int watchStage = Evil_Eyes.getPlayerStage(viewer, Evil_Eyes.configManager);
+        Evil_Eyes.startWatchSession(viewer, target.getUuid(), viewer.getWorld().getTime());
+        viewer.sendMessage(Text.literal("§a开始观看 " + target.getName().getString() + " (阶段" + watchStage + ")"), false);
         return 1;
     }
 
@@ -99,7 +113,19 @@ public class WatchCommand {
             CameraWatchManager.stopWatching(viewer, viewer.getServer());
         }
 
-        CameraWatchManager.startWatching(viewer, target.getUuid(), viewer.getServer());
+        // 检查配置限制
+        if (Evil_Eyes.configManager == null) {
+            viewer.sendMessage(Text.literal("§c配置未初始化"), false);
+            return 0;
+        }
+        int stage = Evil_Eyes.getPlayerStage(viewer, Evil_Eyes.configManager);
+        if (!Evil_Eyes.configManager.canMark(viewer.getUuid(), stage)) {
+            viewer.sendMessage(Text.literal("§c今日观看次数已达上限"), false);
+            return 0;
+        }
+
+        Evil_Eyes.startWatchSession(viewer, target.getUuid(), viewer.getWorld().getTime());
+        viewer.sendMessage(Text.literal("§a开始观看 " + target.getName().getString() + " (阶段" + stage + ")"), false);
         return 1;
     }
 

@@ -23,6 +23,9 @@ public class CameraWatchClientHandler {
     private static boolean lastSneak = false;
 
     public static void onCameraUpdate(Vec3d pos, float yaw, float pitch) {
+        if (!hasValidTarget) {
+            com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.exitViewMode(MinecraftClient.getInstance());
+        }
         targetPos = pos;
         targetYaw = yaw;
         targetPitch = pitch;

@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.shushuwonie.clairvoyance.Clairvoyance;
 import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.Entity;
@@ -36,7 +37,40 @@ public class ClairvoyanceCommand {
                                 .executes(ctx -> clearAllAnchors(ctx.getSource()))
                         )
                 )
+                .then(CommandManager.literal("viewmode_切换相机系统")
+                        .then(CommandManager.literal("legacy——旧版客户端")
+                                .executes(ctx -> setViewMode(ctx, "legacy"))
+                        )
+                        .then(CommandManager.literal("modern——新版服务端")
+                                .executes(ctx -> setViewMode(ctx, "modern"))
+                        )
+                        .executes(ctx -> {
+                            ServerPlayerEntity player = ctx.getSource().getPlayer();
+                            String current = Clairvoyance.VIEW_MODE_PREFERENCE.getOrDefault(player.getUuid(), "modern");
+                            String modeName = "legacy".equals(current) ? "§e旧版(客户端盔甲架)" : "§a新版(服务端CameraWatch)";
+                            player.sendMessage(Text.literal("§6当前观看模式: " + modeName), false);
+                            player.sendMessage(Text.literal("§7使用 /clairvoyance viewmode <legacy|modern> 切换"), false);
+                            return 1;
+                        })
+                )
         );
+    }
+
+    private static int setViewMode(CommandContext<ServerCommandSource> ctx, String mode) throws CommandSyntaxException {
+        ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+        Clairvoyance.VIEW_MODE_PREFERENCE.put(player.getUuid(), mode);
+
+        // 如果在观看中，停止当前观看
+        if (com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager.isWatching(player)) {
+            com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager.stopWatching(player, player.getServer());
+        }
+        if (Evil_Eyes.isWatching(player)) {
+            Evil_Eyes.forceStopWatching(player, player.getServer());
+        }
+
+        String displayName = "legacy".equals(mode) ? "§e旧版(客户端盔甲架)" : "§a新版(服务端CameraWatch)";
+        player.sendMessage(Text.literal("§a已切换到观看模式: " + displayName), false);
+        return 1;
     }
 
     private static int clearOwnAnchors(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
@@ -72,9 +106,6 @@ public class ClairvoyanceCommand {
             UUID standId = entry.getKey();
             Entity stand = world.getEntity(standId);
             if (stand instanceof ArmorStandEntity armorStand) {
-                // 可选：检查自定义名称（可根据需要决定是否过滤）
-                // Text name = armorStand.getCustomName();
-                // if (name != null && name.getString().equals("clairvoyance_evil_eyes")) {
                 // 移除映射
                 Evil_Eyes.armorStandOwner.remove(standId);
                 Evil_Eyes.armorStandSpawnTick.remove(standId);
@@ -86,7 +117,6 @@ public class ClairvoyanceCommand {
                 Evil_Eyes.sendExplosionToNearbyPlayers(armorStand, server);
                 armorStand.remove(Entity.RemovalReason.DISCARDED);
                 count++;
-                // }
             }
         }
         int finalCount = count;

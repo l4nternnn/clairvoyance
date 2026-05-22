@@ -1,4 +1,4 @@
-package com.shushuwonie.client.evil_eyes;
+package com.shushuwonie.clairvoyance.client.evil_eyes;
 
 import com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen;
 import net.minecraft.client.MinecraftClient;

@@ -170,6 +170,16 @@ public class Evil_Eyes {
     }
 
     /**
+     * 启动一个带超时追踪的观看会话（供 /watch 命令等调用）
+     * 添加到 watchingPlayers 使得 tick 处理器能进行超时强制退出和次数消耗
+     */
+    public static void startWatchSession(ServerPlayerEntity player, UUID targetUuid, long currentTick) {
+        watchingPlayers.remove(player.getUuid());
+        watchingPlayers.put(player.getUuid(), new WatchingInfo(targetUuid, currentTick));
+        CameraWatchManager.startWatching(player, targetUuid, player.getServer());
+    }
+
+    /**
      * 清除指定玩家的标记列表（用于断线清理）
      */
     public static void clearPlayerMarks(UUID playerUuid) {
@@ -351,16 +361,18 @@ public class Evil_Eyes {
             Long expire = marks.get(selected);
             if (expire == null || expire <= player.getWorld().getTime()) return;
 
-            // 检查被观看实体是否在任意锚点30格内
+            // 检查被观看实体是否在锚点30格范围内或自身30格范围内（自动标记同理）
             Entity targetEntity = player.getWorld().getEntity(selected);
             if (targetEntity == null) return;
-            boolean nearAnchor = false;
-            for (Map.Entry<UUID, UUID> entry : armorStandOwner.entrySet()) {
-                if (!entry.getValue().equals(player.getUuid())) continue;
-                Entity anchor = player.getWorld().getEntity(entry.getKey());
-                if (anchor != null && anchor.isAlive() && targetEntity.squaredDistanceTo(anchor) < 30 * 30) {
-                    nearAnchor = true;
-                    break;
+            boolean nearAnchor = targetEntity.squaredDistanceTo(player) < 30 * 30;
+            if (!nearAnchor) {
+                for (Map.Entry<UUID, UUID> entry : armorStandOwner.entrySet()) {
+                    if (!entry.getValue().equals(player.getUuid())) continue;
+                    Entity anchor = player.getWorld().getEntity(entry.getKey());
+                    if (anchor != null && anchor.isAlive() && targetEntity.squaredDistanceTo(anchor) < 30 * 30) {
+                        nearAnchor = true;
+                        break;
+                    }
                 }
             }
             if (!nearAnchor) {
@@ -375,7 +387,16 @@ public class Evil_Eyes {
             }
             watchingPlayers.remove(player.getUuid());
             watchingPlayers.put(player.getUuid(), new WatchingInfo(selected, player.getWorld().getTime()));
-            CameraWatchManager.startWatching(player, selected, player.getServer());
+
+            // 根据玩家偏好选择观看系统
+            String mode = com.shushuwonie.clairvoyance.Clairvoyance.VIEW_MODE_PREFERENCE.getOrDefault(player.getUuid(), "modern");
+            if ("legacy".equals(mode)) {
+                // 旧系统：通知客户端使用本地盔甲架相机
+                ServerPlayNetworking.send(player, new SelectViewPayload(selected));
+            } else {
+                // 新系统（默认）：服务端 CameraWatch
+                CameraWatchManager.startWatching(player, selected, player.getServer());
+            }
         });
 
         // 5. 受伤退出
@@ -446,7 +467,7 @@ public class Evil_Eyes {
                     Vec3d entityLook = entity.getRotationVec(1.0f);
                     if (entityLook.dotProduct(toPlayer) < 0.5) continue;
                     long now = world.getTime();
-                    marks.put(entity.getUuid(), now + 40);
+                    marks.put(entity.getUuid(), now + 400);
                     sendMarkedListToClient(player, marks, maxMarks);
                     player.sendMessage(Text.literal( entity.getName().getString()+"在注视着你"), true);
                 }

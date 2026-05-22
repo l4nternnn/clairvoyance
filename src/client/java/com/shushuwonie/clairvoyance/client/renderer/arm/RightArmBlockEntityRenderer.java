@@ -2,14 +2,17 @@ package com.shushuwonie.clairvoyance.client.renderer.arm;
 
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.arm.RightArmModel;
+import com.shushuwonie.clairvoyance.client.model.arm.RightArmSlimModel;
 import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlock;
 import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.block.entity.SkullBlockEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.util.Identifier;
@@ -18,11 +21,15 @@ import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 public class RightArmBlockEntityRenderer implements BlockEntityRenderer<RightArmBlockEntity> {
     private final RightArmModel model;
+    private final RightArmSlimModel slimModel;
 
     public RightArmBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
         this.model = new RightArmModel(ctx.getLayerModelPart(ModModelLayers.RIGHT_ARM));
+        this.slimModel = new RightArmSlimModel(ctx.getLayerModelPart(ModModelLayers.RIGHT_ARM_SLIM));
     }
 
     @Override
@@ -37,27 +44,36 @@ public class RightArmBlockEntityRenderer implements BlockEntityRenderer<RightArm
         matrices.scale(1.0F, -1.0F, -1.0F);
         matrices.translate(0.0F, 0.0F, 0.0F);
 
-        Identifier texture = getSkinTexture(entity.getOwner());
+        Identifier texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
-        model.setHeadRotation(0, yaw, 0);
-        model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, OverlayTexture.DEFAULT_UV);
+
+        boolean slim = "slim".equals(entity.getSkinType());
+        SkullBlockEntityModel activeModel = slim ? slimModel : model;
+        activeModel.setHeadRotation(0, yaw, 0);
+        activeModel.render(matrices, vertexConsumers.getBuffer(renderLayer), light, OverlayTexture.DEFAULT_UV);
         matrices.pop();
     }
 
-    // 复用 getSkinTexture 和 getYawFromDirection
-
-
-    private Identifier getSkinTexture(@Nullable ProfileComponent owner) {
+    private Identifier getSkinTexture(@Nullable ProfileComponent owner, @Nullable UUID playerUuid) {
         if (owner != null && owner.gameProfile() != null) {
+            GameProfile profile = owner.gameProfile();
+            if (!profile.getProperties().get("textures").isEmpty()) {
+                return MinecraftClient.getInstance()
+                        .getSkinProvider()
+                        .getSkinTextures(profile)
+                        .texture();
+            }
+        }
+        if (playerUuid != null) {
+            GameProfile fallbackProfile = new GameProfile(playerUuid, "");
             return MinecraftClient.getInstance()
                     .getSkinProvider()
-                    .getSkinTextures(owner.gameProfile())
+                    .getSkinTextures(fallbackProfile)
                     .texture();
         }
-        // 使用一个有效的默认纹理，建议放在 textures/entity/arm/ 下
         return Identifier.of("clairvoyance", "textures/block/torso.png");
     }
-    // 复用 getSkinTexture 和 getYawFromDirection
+
     private float getYawFromDirection(Direction direction) {
         return switch (direction) {
             case NORTH -> 180.0F;

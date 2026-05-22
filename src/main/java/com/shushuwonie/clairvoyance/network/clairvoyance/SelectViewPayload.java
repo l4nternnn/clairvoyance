@@ -2,7 +2,6 @@ package com.shushuwonie.clairvoyance.network.clairvoyance;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
@@ -20,8 +19,9 @@ public record SelectViewPayload(UUID entityUuid) implements CustomPayload {
     private static boolean registered = false;
     public static void register() {
         if (!registered) {
-            net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playC2S().register(ID, CODEC);
             registered = true;
+            PayloadTypeRegistry.playC2S().register(ID, CODEC);
+            PayloadTypeRegistry.playS2C().register(ID, CODEC);
         }
     }
     @Override

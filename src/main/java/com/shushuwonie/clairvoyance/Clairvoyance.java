@@ -68,6 +68,9 @@ public class Clairvoyance implements ModInitializer {
 	// 在类中定义静态 Map，记录谁在查看谁
 	public static final Map<ServerPlayerEntity, ServerPlayerEntity> VIEWING_MAP = new ConcurrentHashMap<>();
 
+	// 观看模式偏好: "legacy" = 客户端盔甲架相机, "modern" = 服务端 CameraWatch (默认)
+	public static final Map<UUID, String> VIEW_MODE_PREFERENCE = new ConcurrentHashMap<>();
+
 	// 抱起者 -> 被抱实体
 	public static final Map<ServerPlayerEntity, CarriedEntityData> CARRIED_ENTITIES = new ConcurrentHashMap<>();
 	// 被抱实体 -> 抱起者（用于玩家主动挣脱时快速找到抱起者）
@@ -349,6 +352,7 @@ public class Clairvoyance implements ModInitializer {
 			com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes.clearPlayerMarks(player.getUuid());
 			VIEWING_MAP.remove(player);
 			VIEWING_MAP.values().removeIf(v -> v == player);
+			VIEW_MODE_PREFERENCE.remove(player.getUuid());
 			CarriedEntityData carriedData = CARRIED_ENTITIES.remove(player);
 			if (carriedData != null) {
 				Entity carried = carriedData.entity;
@@ -499,58 +503,60 @@ public class Clairvoyance implements ModInitializer {
 			}
 		});
 
-		// 观看模式下禁止交互（服务端拦截）
-		// 阻止攻击实体
-		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
-				serverPlayer.sendMessage(Text.literal("§c观看模式下无法攻击"), true);
-				return ActionResult.FAIL;
-			}
-			return ActionResult.PASS;
-		});
+			// 观看模式下禁止交互（服务端拦截）
+			// 阻止攻击实体
+			AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+				if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
+					serverPlayer.sendMessage(Text.literal("§c观看模式下无法攻击"), true);
+					return ActionResult.FAIL;
+				}
+				return ActionResult.PASS;
+			});
 
-// 阻止破坏方块（左键）
-		AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
-				serverPlayer.sendMessage(Text.literal("§c观看模式下无法破坏方块"), true);
-				return ActionResult.FAIL;
-			}
-			return ActionResult.PASS;
-		});
+	// 阻止破坏方块（左键）
+			AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+				if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
+					serverPlayer.sendMessage(Text.literal("§c观看模式下无法破坏方块"), true);
+					return ActionResult.FAIL;
+				}
+				return ActionResult.PASS;
+			});
 
-// 阻止使用方块（右键）
-		UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
-				serverPlayer.sendMessage(Text.literal("§c观看模式下无法使用方块"), true);
-				return ActionResult.FAIL;
-			}
-			return ActionResult.PASS;
-		});
+	// 阻止使用方块（右键）
+			UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+				if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
+					serverPlayer.sendMessage(Text.literal("§c观看模式下无法使用方块"), true);
+					return ActionResult.FAIL;
+				}
+				return ActionResult.PASS;
+			});
 
-// 阻止与实体交互（右键实体）
-		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
-				serverPlayer.sendMessage(Text.literal("§c观看模式下无法与实体交互"), true);
-				return ActionResult.FAIL;
-			}
-			return ActionResult.PASS;
-		});
+	// 阻止与实体交互（右键实体）
+			UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+				if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
+					serverPlayer.sendMessage(Text.literal("§c观看模式下无法与实体交互"), true);
+					return ActionResult.FAIL;
+				}
+				return ActionResult.PASS;
+			});
 
-// 阻止使用物品（右键空气）
-		UseItemCallback.EVENT.register((player, world, hand) -> {
-			if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
-				serverPlayer.sendMessage(Text.literal("§c观看模式下无法使用物品"), true);
-				return ActionResult.FAIL;
-			}
-			return ActionResult.PASS;
-		});
+	// 阻止使用物品（右键空气）
+			UseItemCallback.EVENT.register((player, world, hand) -> {
+				if (player instanceof ServerPlayerEntity serverPlayer && isViewing(serverPlayer)) {
+					serverPlayer.sendMessage(Text.literal("§c观看模式下无法使用物品"), true);
+					return ActionResult.FAIL;
+				}
+				return ActionResult.PASS;
+			});
 
-	}
-
-
+		}
 
 
-	private static void releaseCarried(ServerPlayerEntity carrier, Entity carried) {
+
+
+
+
+		private static void releaseCarried(ServerPlayerEntity carrier, Entity carried) {
 		CARRIED_ENTITIES.remove(carrier);
 		CARRIED_BY.remove(carried);
 		carried.setNoGravity(false);

@@ -4,6 +4,7 @@ import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.leg.LeftLegModel;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlock;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -17,6 +18,8 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public class LeftLegBlockEntityRenderer implements BlockEntityRenderer<LeftLegBlockEntity> {
     private final LeftLegModel model;
@@ -37,21 +40,30 @@ public class LeftLegBlockEntityRenderer implements BlockEntityRenderer<LeftLegBl
         matrices.scale(-1.0F, -1.0F, 1.0F);
         matrices.translate(0.0F, 0.375F, 0.0F);
 
-        Identifier texture = getSkinTexture(entity.getOwner());
+        Identifier texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
         model.setHeadRotation(0, yaw, 0);
         model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, OverlayTexture.DEFAULT_UV);
         matrices.pop();
     }
 
-    private Identifier getSkinTexture(@Nullable ProfileComponent owner) {
+    private Identifier getSkinTexture(@Nullable ProfileComponent owner, @Nullable UUID playerUuid) {
         if (owner != null && owner.gameProfile() != null) {
+            GameProfile profile = owner.gameProfile();
+            if (!profile.getProperties().get("textures").isEmpty()) {
+                return MinecraftClient.getInstance()
+                        .getSkinProvider()
+                        .getSkinTextures(profile)
+                        .texture();
+            }
+        }
+        if (playerUuid != null) {
+            GameProfile fallbackProfile = new GameProfile(playerUuid, "");
             return MinecraftClient.getInstance()
                     .getSkinProvider()
-                    .getSkinTextures(owner.gameProfile())
+                    .getSkinTextures(fallbackProfile)
                     .texture();
         }
-        // 使用一个有效的默认纹理，建议放在 textures/entity/arm/ 下
         return Identifier.of("clairvoyance", "textures/block/torso.png");
     }
 

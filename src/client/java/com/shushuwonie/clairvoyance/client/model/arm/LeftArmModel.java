@@ -24,8 +24,8 @@ public class LeftArmModel extends SkullBlockEntityModel {
 
 
         arm.addChild("left_sleeve",
-                ModelPartBuilder.create().uv(48, 48).cuboid(-4.0F, -12.0F, -4.0F, 4.0F,
-                                                                                12.0F, 4.0F, new Dilation(0.25F))
+                ModelPartBuilder.create().uv(48, 48).cuboid(-4.0F, -12.0F, -4.0F,
+                                                                                4.0F, 12.0F, 4.0F, new Dilation(0.25F))
                 , ModelTransform.origin(0.0f,0.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }

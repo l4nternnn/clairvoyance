@@ -19,12 +19,12 @@ public class LeftLegModel extends SkullBlockEntityModel {
         ModelPartData root = modelData.getRoot();
         // 左臂：宽6，高12，深6，原点偏移使其位于方块左侧
         ModelPartData leftLeg =   root.addChild(EntityModelPartNames.HEAD,
-                ModelPartBuilder.create().uv(16, 48).cuboid(-2.0F, -12.0F, -2.0f, 4.0F, 12.0F, 4.0F),
+                ModelPartBuilder.create().uv(16, 48).cuboid(-4.0F, -12.0F, -4.0f, 4.0F, 12.0F, 4.0F),
                 ModelTransform.origin(0.5f,-6.0f,0.0f));
 
         leftLeg.addChild("left_pants",
-                ModelPartBuilder.create().uv(0, 32).cuboid(-2.0F, -12.0F, -2.0F, 4.0F, 12.0F, 4.0F, new Dilation(0.25F)),
-                ModelTransform.origin(0.5f,-6.0f,0.0f));
+                ModelPartBuilder.create().uv(0, 32).cuboid(-4.0F, -12.0F, -4.0F, 4.0F, 12.0F, 4.0F, new Dilation(0.25F)),
+                ModelTransform.origin(0.0f,-0.0f,0.0f));
         return TexturedModelData.of(modelData, 64, 64);
     }
 
