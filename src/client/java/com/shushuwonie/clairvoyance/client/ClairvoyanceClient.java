@@ -12,11 +12,14 @@ import com.shushuwonie.clairvoyance.client.model.arm.LeftArmModel;
 import com.shushuwonie.clairvoyance.client.model.arm.LeftArmSlimModel;
 import com.shushuwonie.clairvoyance.client.model.arm.RightArmModel;
 import com.shushuwonie.clairvoyance.client.model.arm.RightArmSlimModel;
+import com.shushuwonie.clairvoyance.client.model.head.HeadModel;
 import com.shushuwonie.clairvoyance.client.model.leg.LeftLegModel;
 import com.shushuwonie.clairvoyance.client.model.leg.RightLegModel;
 import com.shushuwonie.clairvoyance.client.model.torso.TorsoModel;
 import com.shushuwonie.clairvoyance.client.renderer.arm.LeftArmBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.arm.RightArmBlockEntityRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.head.HeadBlockEntityRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.head.HeadSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.LeftLegBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.RightLegBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.arm.LeftArmSpecialModelRenderer;
@@ -86,7 +89,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.shushuwonie.client.gazeguidance.GazeguidanceClient.getTargetEntity;
+import static com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.getTargetEntity;
 
 public class ClairvoyanceClient implements ClientModInitializer {
 	private static KeyBinding configKey;
@@ -121,7 +124,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 初始化其他模块
 		com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.initialize();
-		com.shushuwonie.client.gazeguidance.GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
+		com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
 		// 按键绑定
 		configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_U, "category.clairvoyance"));
 		markKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.mark", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_V, "category.clairvoyance"));
@@ -191,7 +194,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 							client.player.sendMessage(Text.literal("§c请对准一名玩家"), true);
 						}
 					} else {
-						client.player.sendMessage(Text.literal("§c功能未完善喵，仅创造模式才能使用此功能"), true);
+						client.player.sendMessage(Text.literal("§c查看背包功能未完善喵，仅创造模式才能使用此功能"), true);
 					}
 				}
 			}
@@ -227,8 +230,8 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		// 2. 打开/关闭 UI（旧系统）
 		ClientPlayNetworking.registerGlobalReceiver(OpenUIPacket.ID, (packet, context) -> {
 			context.client().execute(() -> {
-				if (context.client().currentScreen instanceof com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen) context.client().setScreen(null);
-				else context.client().setScreen(new com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen());
+				if (context.client().currentScreen instanceof com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen) context.client().setScreen(null);
+				else context.client().setScreen(new com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen());
 			});
 		});
 
@@ -239,12 +242,12 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				// 清空信号：同步清空本地标记和GUI列表
 				if (uuid.getMostSignificantBits() == 0 && uuid.getLeastSignificantBits() == 0) {
 					com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.clear();
-					com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+					com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 					return;
 				}
 				long expire = context.client().world != null ? context.client().world.getTime() + 60 : System.currentTimeMillis() / 50 + 60;
 				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.put(uuid, expire);
-				com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+				com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
 			});
 		});
 
@@ -291,12 +294,12 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 9. 能量同步
 		ClientPlayNetworking.registerGlobalReceiver(EnergySyncPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.client.gazeguidance.GazeguidanceClient.setEnergy(packet.currentEnergy(), packet.maxEnergy()));
+			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setEnergy(packet.currentEnergy(), packet.maxEnergy()));
 		});
 
 		// 10. 标记数量同步
 		ClientPlayNetworking.registerGlobalReceiver(MarkCountPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.client.gazeguidance.GazeguidanceClient.setMarkCount(packet.count()));
+			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setMarkCount(packet.count()));
 		});
 
 		// 11. 粒子效果（静态点）
@@ -313,7 +316,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 12. 强度阶段同步
 		ClientPlayNetworking.registerGlobalReceiver(StrengthPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.client.gazeguidance.GazeguidanceClient.setStrength(packet.stage(), packet.maxMarks()));
+			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setStrength(packet.stage(), packet.maxMarks()));
 		});
 
 		// 13. 锚点粒子接收（同时缓存位置）
@@ -507,12 +510,20 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				ModBlockEntities.RIGHT_LEG_BLOCK_ENTITY,
 				RightLegBlockEntityRenderer::new
 		);
+
+		//头部
+		EntityModelLayerRegistry.registerModelLayer(ModModelLayers.HEAD, HeadModel::getTexturedModelData);
+		BlockEntityRendererFactories.register(
+				ModBlockEntities.HEAD_BLOCK_ENTITY,
+				HeadBlockEntityRenderer::new
+		);
 		// 注册 SpecialModelRenderer 类型（物品栏/手持 3D 渲染）
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "torso"), TorsoSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_arm"), LeftArmSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_arm"), RightArmSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_leg"), LeftLegSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_leg"), RightLegSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "head"), HeadSpecialModelRenderer.Unbaked.CODEC);
 
 
 		HandledScreens.register(ModScreenHandlers.BODY_PART_SCREEN_HANDLER, BodyPartScreen::new);

@@ -1,6 +1,6 @@
 package com.shushuwonie.clairvoyance.client.evil_eyes;
 
-import com.shushuwonie.client.gui.evil_eyes.Evil_eyesScreen;
+import com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;

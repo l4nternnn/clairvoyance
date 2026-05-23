@@ -1,4 +1,4 @@
-package com.shushuwonie.client.gazeguidance;
+package com.shushuwonie.clairvoyance.client.gazeguidance;
 
 import com.shushuwonie.clairvoyance.network.gazeguidance.RightClickActionPacket;
 import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;
@@ -107,7 +107,8 @@ public class GazeguidanceClient {
 			drawContext.drawText(client.textRenderer, text, textX, textY, 0xFF5555, true);
 		});
 
-		System.out.println("GazeguidanceClient: Initialized (receivers moved to ClairvoyanceClient)");
+//		System.out.println("GazeguidanceClient: Initialized (receivers moved to ClairvoyanceClient)")
+//		;
 	}
 
 	// 辅助方法：获取目标实体（保留供其他类使用）

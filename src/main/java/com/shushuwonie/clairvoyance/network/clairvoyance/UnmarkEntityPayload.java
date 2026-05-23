@@ -1,5 +1,6 @@
 package com.shushuwonie.clairvoyance.network.clairvoyance;
 
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
@@ -15,6 +16,13 @@ public record UnmarkEntityPayload(UUID entityUuid) implements CustomPayload {
             UnmarkEntityPayload::new
     );
 
+    private static boolean registered = false;
+    public static void register() {
+        if (!registered) {
+            registered = true;
+            PayloadTypeRegistry.playC2S().register(ID, CODEC);
+        }
+    }
     @Override
     public Id<? extends CustomPayload> getId() {
         return ID;

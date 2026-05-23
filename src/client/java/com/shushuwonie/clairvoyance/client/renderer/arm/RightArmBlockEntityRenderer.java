@@ -44,7 +44,13 @@ public class RightArmBlockEntityRenderer implements BlockEntityRenderer<RightArm
         matrices.scale(1.0F, -1.0F, -1.0F);
         matrices.translate(0.0F, 0.0F, 0.0F);
 
-        Identifier texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
+        String localSkin = entity.getLocalSkin();
+        Identifier texture;
+        if (localSkin != null) {
+            texture = Identifier.of("clairvoyance", "textures/local_skin/" + localSkin + ".png");
+        } else {
+            texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
+        }
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
 
         boolean slim = "slim".equals(entity.getSkinType());
@@ -71,7 +77,7 @@ public class RightArmBlockEntityRenderer implements BlockEntityRenderer<RightArm
                     .getSkinTextures(fallbackProfile)
                     .texture();
         }
-        return Identifier.of("clairvoyance", "textures/block/1torso.png");
+        return Identifier.of("clairvoyance", "textures/block/torso.png");
     }
 
     private float getYawFromDirection(Direction direction) {

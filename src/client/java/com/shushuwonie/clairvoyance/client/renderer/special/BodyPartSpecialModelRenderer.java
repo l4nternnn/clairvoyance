@@ -14,10 +14,13 @@ import net.minecraft.component.type.NbtComponent;
 import net.minecraft.component.type.ProfileComponent;
 import net.minecraft.item.ItemDisplayContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
+import java.util.Optional;
 import java.util.Set;
 
 public abstract class BodyPartSpecialModelRenderer implements SpecialModelRenderer<BodyPartSpecialModelRenderer.Data> {
@@ -59,6 +62,20 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
     @Nullable
     @Override
     public Data getData(ItemStack stack) {
+        String armModel = "default";
+
+        // 先检查是否为内置皮肤
+        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData != null) {
+            NbtCompound nbt = customData.copyNbt();
+            Optional<String> localSkin = nbt.getString("local_skin");
+            if (localSkin.isPresent()) {
+                armModel = nbt.getString("arm_model").orElse("default");
+                Identifier localTexture = Identifier.of("clairvoyance", "textures/local_skin/" + localSkin.get() + ".png");
+                return new Data(RenderLayer.getEntityTranslucent(localTexture), armModel);
+            }
+        }
+
         ProfileComponent profile = stack.get(DataComponentTypes.PROFILE);
         if (profile == null) return null;
         ProfileComponent resolved = profile.resolve();
@@ -67,8 +84,6 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
                 .getSkinTextures(resolved.gameProfile(), null);
         if (textures == null) return null;
 
-        String armModel = "default";
-        NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
         if (customData != null) {
             String model = customData.copyNbt().getString("arm_model").orElse("");
             if (!model.isEmpty()) {

@@ -17,6 +17,7 @@ public class Assembly_ModItems {
     public static final BlockItem RIGHT_ARM_ITEM;
     public static final BlockItem LEFT_LEG_ITEM;
     public static final BlockItem RIGHT_LEG_ITEM;
+    public static final BlockItem HEAD_ITEM;
 
     static {
         TORSO_ITEM = createBlockItem("torso", ModBlocks.TORSO);
@@ -24,6 +25,7 @@ public class Assembly_ModItems {
         RIGHT_ARM_ITEM = createBlockItem("right_arm", ModBlocks.RIGHT_ARM);
         LEFT_LEG_ITEM = createBlockItem("left_leg", ModBlocks.LEFT_LEG);
         RIGHT_LEG_ITEM = createBlockItem("right_leg", ModBlocks.RIGHT_LEG);
+        HEAD_ITEM = createBlockItem("head", ModBlocks.HEAD);
     }
 
     private static BlockItem createBlockItem(String path, net.minecraft.block.Block block) {
@@ -44,6 +46,7 @@ public class Assembly_ModItems {
         register(RIGHT_ARM_ITEM, "right_arm");
         register(LEFT_LEG_ITEM, "left_leg");
         register(RIGHT_LEG_ITEM, "right_leg");
+        register(HEAD_ITEM, "head");
 
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS)
@@ -53,6 +56,7 @@ public class Assembly_ModItems {
                     entries.add(RIGHT_ARM_ITEM);
                     entries.add(LEFT_LEG_ITEM);
                     entries.add(RIGHT_LEG_ITEM);
+                    entries.add(HEAD_ITEM);
                 });
     }
 

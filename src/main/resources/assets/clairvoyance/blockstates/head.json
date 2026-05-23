@@ -1,0 +1,8 @@
+{
+"variants":{
+"facing=north":{"model":"clairvoyance:block/head"},
+"facing=east":{"model":"clairvoyance:block/head","y":90},
+"facing=south":{"model":"clairvoyance:block/head","y":180},
+"facing=west":{"model":"clairvoyance:block/head","y":270}
+}
+}

@@ -1,4 +1,4 @@
-package com.shushuwonie.client.gui.evil_eyes;
+package com.shushuwonie.clairvoyance.client.gui.evil_eyes;
 
 import com.shushuwonie.clairvoyance.network.clairvoyance.GlobalConfigS2CPacket;
 import com.shushuwonie.clairvoyance.network.clairvoyance.RequestGlobalConfigC2SPacket;

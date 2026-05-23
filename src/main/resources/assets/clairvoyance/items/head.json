@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "clairvoyance:item/head",
+    "model": {
+      "type": "clairvoyance:head"
+    }
+  }
+}

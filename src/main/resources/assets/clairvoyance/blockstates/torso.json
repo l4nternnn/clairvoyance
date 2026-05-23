@@ -1,8 +1,8 @@
 {
 "variants":{
-"facing=north":{"model":"clairvoyance:block/model_torso"},
-"facing=east":{"model":"clairvoyance:block/model_torso","y":90},
-"facing=south":{"model":"clairvoyance:block/model_torso","y":180},
-"facing=west":{"model":"clairvoyance:block/model_torso","y":270}
+"facing=north":{"model":"clairvoyance:block/torso"},
+"facing=east":{"model":"clairvoyance:block/torso","y":90},
+"facing=south":{"model":"clairvoyance:block/torso","y":180},
+"facing=west":{"model":"clairvoyance:block/torso","y":270}
 }
 }

@@ -40,7 +40,13 @@ public class LeftLegBlockEntityRenderer implements BlockEntityRenderer<LeftLegBl
         matrices.scale(-1.0F, -1.0F, 1.0F);
         matrices.translate(0.0F, 0.375F, 0.0F);
 
-        Identifier texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
+        String localSkin = entity.getLocalSkin();
+        Identifier texture;
+        if (localSkin != null) {
+            texture = Identifier.of("clairvoyance", "textures/local_skin/" + localSkin + ".png");
+        } else {
+            texture = getSkinTexture(entity.getOwner(), entity.getPlayerUuid());
+        }
         RenderLayer renderLayer = RenderLayer.getEntityTranslucent(texture);
         model.setHeadRotation(0, yaw, 0);
         model.render(matrices, vertexConsumers.getBuffer(renderLayer), light, OverlayTexture.DEFAULT_UV);
@@ -64,7 +70,7 @@ public class LeftLegBlockEntityRenderer implements BlockEntityRenderer<LeftLegBl
                     .getSkinTextures(fallbackProfile)
                     .texture();
         }
-        return Identifier.of("clairvoyance", "textures/block/1torso.png");
+        return Identifier.of("clairvoyance", "textures/block/torso.png");
     }
 
     private float getYawFromDirection(Direction direction) {

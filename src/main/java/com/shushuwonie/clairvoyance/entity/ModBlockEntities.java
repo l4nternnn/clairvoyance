@@ -5,6 +5,7 @@ import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.leg.RightLegBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.head.HeadBlockEntity;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlockEntity;
 import com.shushuwonie.clairvoyance.item.modblock.ModBlocks;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -40,6 +41,12 @@ public class ModBlockEntities {
             Registries.BLOCK_ENTITY_TYPE,
             Identifier.of(Clairvoyance.MOD_ID, "right_leg"),
             FabricBlockEntityTypeBuilder.create(RightLegBlockEntity::new, ModBlocks.RIGHT_LEG).build()
+    );
+
+    public static final BlockEntityType<HeadBlockEntity> HEAD_BLOCK_ENTITY = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            Identifier.of(Clairvoyance.MOD_ID, "head"),
+            FabricBlockEntityTypeBuilder.create(HeadBlockEntity::new, ModBlocks.HEAD).build()
     );
 
     public static void initialize() {

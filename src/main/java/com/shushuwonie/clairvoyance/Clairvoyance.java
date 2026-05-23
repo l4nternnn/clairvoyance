@@ -3,6 +3,7 @@ package com.shushuwonie.clairvoyance;
 import com.google.gson.JsonObject;
 import com.shushuwonie.clairvoyance.command.ClairvoyanceCommand;
 import com.shushuwonie.clairvoyance.command.GiveBodyPartCommand;
+import com.shushuwonie.clairvoyance.command.ReplaceBodyPartCommand;
 import com.shushuwonie.clairvoyance.command.WatchCommand;
 import com.shushuwonie.clairvoyance.config.GlobalConfigManager;
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
@@ -28,6 +29,8 @@ import com.shushuwonie.clairvoyance.screen.OtherPlayerInventoryScreenHandler;
 import com.shushuwonie.clairvoyance.screen.OtherPlayerInventoryScreenHandlerFactory;
 
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.server.command.CommandManager;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -53,8 +56,10 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -70,6 +75,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
 import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.decoration.DisplayEntity;
+import org.joml.Quaternionf;
+import java.lang.reflect.Field;
 
 public class Clairvoyance implements ModInitializer {
 	public static final String MOD_ID = "clairvoyance";
@@ -88,6 +97,34 @@ public class Clairvoyance implements ModInitializer {
 	public static final Map<Entity, ServerPlayerEntity> CARRIED_BY = new ConcurrentHashMap<>();
 	// 抱起冷却：实体 -> 冷却结束时间戳
 	public static final Map<Entity, Long> CARRIED_COOLDOWN = new ConcurrentHashMap<>();
+	// 挣扎计数：被抱实体 -> 当前潜行次数
+	public static final Map<Entity, Integer> STRUGGLE_COUNTER = new ConcurrentHashMap<>();
+	// XP消耗：每20tick消耗amount点经验值
+	public static final Map<ServerPlayerEntity, Integer> CARRY_XP_TICK_COUNTER = new ConcurrentHashMap<>();
+	public static int CARRY_XP_DRAIN_RATE = 1;
+
+	// Per-limb quaternion rotations for death-dropped body parts (from Axiom EntityPlacer data)
+	//修改肢体死亡后俯仰角和偏航
+	private static final Quaternionf[] PART_ROTATIONS = {
+		new Quaternionf(0.6087613f, 0.0f, 0.0f, 0.79335344f),     // head (i=0)
+		new Quaternionf(0.6f, 0.0f, 0.0f, 0.79f),                   // torso (i=1, identity)
+		new Quaternionf(0.6733123f, 0.15081385f, -0.14311697f, 0.70952326f), // left_arm (i=2)
+		new Quaternionf(0.7021285f, -0.12193926f, 0.12365657f, 0.69054717f),  // right_arm (i=3)
+		new Quaternionf(0.68573505f, 0.06322056f, -0.05999406f, 0.7226142f),  // left_leg (i=4)
+		new Quaternionf(0.69693834f, -0.07450287f, 0.07333822f, 0.70947003f)   // right_leg (i=5)
+	};
+	private static final TrackedData LEFT_ROTATION_KEY;
+	static {
+		TrackedData key = null;
+		try {
+			Field field = DisplayEntity.class.getDeclaredField("LEFT_ROTATION");
+			field.setAccessible(true);
+			key = (TrackedData) field.get(null);
+		} catch (Exception e) {
+			LOGGER.error("Failed to access DisplayEntity.LEFT_ROTATION", e);
+		}
+		LEFT_ROTATION_KEY = key;
+	}
 	// 辅助记录实体数据
 	public static class CarriedEntityData {
 		public final Entity entity;
@@ -122,6 +159,16 @@ public class Clairvoyance implements ModInitializer {
 		return player.getCommandTags().contains(tag);
 	}
 	private static final Set<UUID> FALL_DAMAGE_PROCESSING = ConcurrentHashMap.newKeySet();
+
+	// 根据标签计算挣脱所需次数
+	private static int getStruggleThreshold(ServerPlayerEntity carrier, Entity carried) {
+		if (!carrier.getCommandTags().contains("qiangzhiai")) return 1;
+		if (carried instanceof ServerPlayerEntity carriedPlayer) {
+			if (carriedPlayer.getCommandTags().contains("qiangzhiai")) return 1;
+			if (carriedPlayer.getCommandTags().contains("strong_power")) return 100;
+		}
+		return 300;
+	}
 
 
 	@Override
@@ -170,8 +217,11 @@ public class Clairvoyance implements ModInitializer {
 
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			GiveBodyPartCommand.register(dispatcher);
+			GiveBodyPartCommand.register(dispatcher, registryAccess, environment);
 		});
+			CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+				ReplaceBodyPartCommand.register(dispatcher, registryAccess, environment);
+			});
 
 		GlobalConfigManager configManager = new GlobalConfigManager();
 
@@ -248,6 +298,23 @@ public class Clairvoyance implements ModInitializer {
 
 		// 在 onInitialize 方法末尾添加
 		CommandRegistrationCallback.EVENT.register(ClairvoyanceCommand::register);
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			dispatcher.register(CommandManager.literal("carry-xp-rate")
+					.requires(source -> source.hasPermissionLevel(2))
+					.then(CommandManager.argument("amount", IntegerArgumentType.integer(0, 100))
+						.executes(ctx -> {
+							int amount = IntegerArgumentType.getInteger(ctx, "amount");
+							CARRY_XP_DRAIN_RATE = amount;
+							ctx.getSource().sendMessage(Text.literal("§a搬运经验消耗率已设置为 " + amount));
+							return 1;
+						})
+					)
+					.executes(ctx -> {
+						ctx.getSource().sendMessage(Text.literal("§e当前搬运经验消耗率: " + CARRY_XP_DRAIN_RATE));
+						return 1;
+					})
+			);
+		});
 
 
 		ServerPlayNetworking.registerGlobalReceiver(AnchorDestroyC2SPacket.ID, (packet, context) -> {
@@ -366,9 +433,45 @@ public class Clairvoyance implements ModInitializer {
 
 				if (carried instanceof ServerPlayerEntity carriedPlayer) {
 					if (carriedPlayer.isSneaking()) {
-						releaseCarried(carrier, carriedPlayer);
-						carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
-						carriedPlayer.sendMessage(Text.literal("§c你挣脱了怀抱"), false);
+						int threshold = getStruggleThreshold(carrier, carried);
+						if (threshold <= 1) {
+							releaseCarried(carrier, carriedPlayer);
+							carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
+							carriedPlayer.sendMessage(Text.literal("§c你挣脱了怀抱"), false);
+							STRUGGLE_COUNTER.remove(carried);
+						} else {
+							int count = STRUGGLE_COUNTER.merge(carried, 1, Integer::sum);
+							carriedPlayer.sendMessage(Text.literal("§e挣扎进度: " + count + "/" + threshold), true);
+							if (count >= threshold) {
+								releaseCarried(carrier, carriedPlayer);
+								carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
+								carriedPlayer.sendMessage(Text.literal("§c你终于挣脱了怀抱"), false);
+								STRUGGLE_COUNTER.remove(carried);
+							}
+						}
+					} else {
+
+						carriedPlayer.networkHandler.requestTeleport(
+								targetPos.x, targetPos.y, targetPos.z,
+								carriedPlayer.getYaw(), carriedPlayer.getPitch()
+						);
+						if (STRUGGLE_COUNTER.containsKey(carried)) {
+							STRUGGLE_COUNTER.remove(carried);
+							carriedPlayer.sendMessage(Text.literal("§7挣扎中断"), false);
+						}
+
+						Vec3d lookTarget = carrier.getEyePos();
+						Vec3d playerPos = carriedPlayer.getPos().add(0, carriedPlayer.getEyeHeight(carriedPlayer.getPose()), 0);
+						Vec3d direction = lookTarget.subtract(playerPos).normalize();
+						float yaw = (float) Math.toDegrees(Math.atan2(-direction.x, direction.z));
+						float pitch = (float) Math.toDegrees(-Math.asin(direction.y));
+						// 平滑限制（可选），避免过于剧烈
+//						carriedPlayer.lookAt(yaw, pitch);
+						// 强制同步位置和朝向
+						carriedPlayer.networkHandler.requestTeleport(
+								targetPos.x, targetPos.y, targetPos.z,
+								yaw, pitch
+						);
 					}
 				}
 			}
@@ -385,29 +488,67 @@ public class Clairvoyance implements ModInitializer {
 				ProfileComponent profile = new ProfileComponent(player.getGameProfile());
 				String playerName = player.getName().getString();
 
+				// Check if player has a tag matching a local skin name
+				String detectedLocalSkin = null;
+				for (String tag : player.getCommandTags()) {
+					if (tag.equals("dead_body")) continue;
+					for (String skin : GiveBodyPartCommand.LOCAL_SKINS) {
+						if (skin.equals(tag)) {
+							detectedLocalSkin = skin;
+							break;
+						}
+					}
+					if (detectedLocalSkin != null) break;
+				}
+
+
 				Item[] partItems = new Item[]{
+					Assembly_ModItems.HEAD_ITEM,
 					Assembly_ModItems.TORSO_ITEM,
 					Assembly_ModItems.LEFT_ARM_ITEM,
 					Assembly_ModItems.RIGHT_ARM_ITEM,
 					Assembly_ModItems.LEFT_LEG_ITEM,
 					Assembly_ModItems.RIGHT_LEG_ITEM
 				};
-				String[] chineseNames = new String[]{"躯干", "左臂", "右臂", "左腿", "右腿"};
-				double[] offsetsX = new double[]{0, -1.0, 1.0, 0.8, -0.8};
-				double[] offsetsZ = new double[]{0, 0,      0,-1.5,-1.5};
+				//修改相对偏移
+				String[] chineseNames = new String[]{"头部","躯干", "左臂", "右臂", "左腿", "右腿"};
+				double[] offsetsX = new double[]	{0.0,  0,  -0.6,  +0.23,   -0.3,   +0.3};
+				double[] offsetsY = new double[]	{0.2,  0,  -0.24,  -0.24,   -0.2,   -0.2};
+				double[] offsetsZ = new double[]	{0.7,  0,  -0.05,  -0.1,	  -1.1,   -1.1};
 
-				for (int i = 0; i < 5; i++) {
+				for (int i = 0; i < 6; i++) {
 					ItemStack stack = new ItemStack(partItems[i]);
-					stack.set(DataComponentTypes.PROFILE, profile);
+
+					if (detectedLocalSkin != null) {
+						// Use local skin instead of player profile
+						NbtCompound nbt = new NbtCompound();
+						nbt.putString("local_skin", detectedLocalSkin);
+						nbt.putString("arm_model", "slim");
+						stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+					} else {
+						// Original behavior: use player profile
+						stack.set(DataComponentTypes.PROFILE, profile);
+					}
+
 					Text displayName = Text.literal("§6§k13§4" + playerName + "§r§6§k13§r" + "的" + chineseNames[i]);
 					stack.set(DataComponentTypes.CUSTOM_NAME, displayName);
 
 					ItemDisplayEntity display = EntityType.ITEM_DISPLAY.create((World) world, SpawnReason.TRIGGERED);
 					if (display != null) {
 						display.setItemStack(stack);
+						if (LEFT_ROTATION_KEY != null) {
+							if (i == 0) {
+								float headYaw = player.getYaw();
+								float headPitch = player.getPitch();
+								Quaternionf headRot = new Quaternionf().rotateY((float) Math.toRadians(-headYaw)).rotateX((float) Math.toRadians(headPitch));
+								display.getDataTracker().set(LEFT_ROTATION_KEY, headRot);
+							} else {
+								display.getDataTracker().set(LEFT_ROTATION_KEY, new Quaternionf(PART_ROTATIONS[i]));
+							}
+						}
 						display.setPosition(
 							deathPos.getX() + 0.5 + offsetsX[i],
-							deathPos.getY() + 0.3,
+							deathPos.getY() + 0.3 + offsetsY[i] ,
 							deathPos.getZ() + 0.5 + offsetsZ[i]
 						);
 						world.spawnEntity(display);
@@ -454,6 +595,8 @@ public class Clairvoyance implements ModInitializer {
 			}
 			// 清理该玩家的冷却记录
 			CARRIED_COOLDOWN.remove(player);
+			STRUGGLE_COUNTER.remove(player);
+			CARRY_XP_TICK_COUNTER.remove(player);
 		});
 
 		//		// 处理搬运实体请求
@@ -601,15 +744,49 @@ public class Clairvoyance implements ModInitializer {
 
 				if (carried instanceof ServerPlayerEntity carriedPlayer) {
 					if (carriedPlayer.isSneaking()) {
-						releaseCarried(carrier, carriedPlayer);
-						carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
-						carriedPlayer.sendMessage(Text.literal("§c你按潜行挣脱了怀抱"), false);
+						int threshold = getStruggleThreshold(carrier, carried);
+						if (threshold <= 1) {
+							releaseCarried(carrier, carriedPlayer);
+							carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
+							carriedPlayer.sendMessage(Text.literal("§c你按潜行挣脱了怀抱"), false);
+							STRUGGLE_COUNTER.remove(carried);
+						} else {
+							int count = STRUGGLE_COUNTER.merge(carried, 1, Integer::sum);
+							carriedPlayer.sendMessage(Text.literal("§e挣扎进度: " + count + "/" + threshold), true);
+							if (count >= threshold) {
+								releaseCarried(carrier, carriedPlayer);
+								carrier.sendMessage(Text.literal("§c" + carriedPlayer.getName().getString() + " 挣脱了"), false);
+								carriedPlayer.sendMessage(Text.literal("§c你终于挣脱了怀抱"), false);
+								STRUGGLE_COUNTER.remove(carried);
+							}
+						}
 					} else {
+						if (STRUGGLE_COUNTER.containsKey(carried)) {
+							STRUGGLE_COUNTER.remove(carried);
+							carriedPlayer.sendMessage(Text.literal("§7挣扎中断"), false);
+						}
 						// 强制同步被抱玩家的服务端位置到客户端，但不改变其朝向
 						carriedPlayer.networkHandler.requestTeleport(
 								targetPos.x, targetPos.y, targetPos.z,
 								carriedPlayer.getYaw(), carriedPlayer.getPitch()
 						);
+					}
+				}
+				// XP消耗·每20tick检测一次
+				if (!carrier.isCreative() && !carrier.getCommandTags().contains("kebao")) {
+					int tickCount = CARRY_XP_TICK_COUNTER.merge(carrier, 1, (oldVal, v) -> oldVal + 1);
+					if (tickCount >= 20) {
+						CARRY_XP_TICK_COUNTER.put(carrier, 0);
+						if (carrier.experienceLevel > 0) {
+							carrier.addExperienceLevels(-CARRY_XP_DRAIN_RATE);
+							if (carrier.experienceLevel < 0) carrier.experienceLevel = 0;
+						} else {
+							releaseCarried(carrier, carried);
+							carrier.sendMessage(Text.literal("§c体力耗尽，无法继续抱起"), false);
+							if (carried instanceof ServerPlayerEntity cp) {
+								cp.sendMessage(Text.literal("§c" + carrier.getName().getString() + "体力耗尽放下了你"), false);
+							}
+						}
 					}
 				}
 			}
@@ -679,6 +856,9 @@ public class Clairvoyance implements ModInitializer {
 			carriedPlayer.getAbilities().invulnerable = data != null ? data.originalInvulnerable : false;
 			carriedPlayer.sendAbilitiesUpdate();
 		}
+		// 清理挣扎计数
+		STRUGGLE_COUNTER.remove(carried);
+		CARRY_XP_TICK_COUNTER.remove(carrier);
 		// 设置5秒抱起冷却
 		CARRIED_COOLDOWN.put(carried, System.currentTimeMillis() + 5000);
 		// 放下位置（使用原本的计算，但需要强制同步）

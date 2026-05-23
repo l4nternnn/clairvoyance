@@ -21,5 +21,8 @@
   "block.clairvoyance.left_arm": "§3§k123§r§6左手臂§r§3§k123§r",
   "block.clairvoyance.right_arm": "§3§k123§r右手臂§r§3§k123§r",
   "block.clairvoyance.left_leg": "§3§k123§r左腿§r§3§k123§r",
-  "block.clairvoyance.right_leg": "§3§k123§r§6右腿§r§3§k123§r"
+  "block.clairvoyance.right_leg": "§3§k123§r§6右腿§r§3§k123§r",
+
+  "item.clairvoyance.head": "玩家头部",
+  "block.clairvoyance.head": "§3§k123§r§6头部§r§3§k123§r"
 }

@@ -39,6 +39,7 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
     @Nullable private CompletableFuture<ProfileComponent> loadingFuture;
     @Nullable private UUID playerUuid;
     private String skinType = "default"; // "default" = Steve, "slim" = Alex
+    @Nullable private String localSkin; // 内置皮肤名称，null表示使用玩家皮肤
 
     public BodyPartBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -100,6 +101,19 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
         }
     }
 
+    @Nullable
+    public String getLocalSkin() {
+        return localSkin;
+    }
+
+    public void setLocalSkin(@Nullable String localSkin) {
+        this.localSkin = localSkin;
+        this.markDirty();
+        if (this.world != null && !this.world.isClient) {
+            ((ServerWorld) this.world).getChunkManager().markForUpdate(this.pos);
+        }
+    }
+
     /**
      * 从GameProfile的纹理属性中检测皮肤类型（"slim"=Alex, "default"=Steve）
      */
@@ -138,6 +152,7 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
         Optional<UUID> uuidOpt = view.read("player_uuid", Uuids.CODEC);
         this.playerUuid = uuidOpt.orElse(null);
         this.skinType = view.read("skin_type", Codec.STRING).orElse("default");
+        this.localSkin = view.read("local_skin", Codec.STRING).orElse(null);
         // 如果 owner 存在且不完整，尝试解析（仅在服务端）
         if (this.owner != null && !this.owner.isCompleted() && this.world != null && !this.world.isClient) {
             this.setOwner(this.owner);
@@ -158,6 +173,9 @@ public class BodyPartBlockEntity extends BlockEntity implements ImplementedInven
             view.put("player_uuid", Uuids.CODEC, this.playerUuid);
         }
         view.put("skin_type", Codec.STRING, this.skinType);
+        if (this.localSkin != null) {
+            view.put("local_skin", Codec.STRING, this.localSkin);
+        }
     }
 
     // ========== 物品栏部分 ==========

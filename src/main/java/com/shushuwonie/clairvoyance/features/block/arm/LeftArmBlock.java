@@ -99,7 +99,10 @@ public class LeftArmBlock extends BlockWithEntity {
                 NbtCompound nbt = customData.copyNbt();
                 if (nbt.contains("arm_model")) {
                     nbt.getString("arm_model").ifPresent(armEntity::setSkinType);
-                }
+				}
+				if (nbt.contains("local_skin")) {
+					nbt.getString("local_skin").ifPresent(armEntity::setLocalSkin);
+				}
             }
             armEntity.markDirty();
         }

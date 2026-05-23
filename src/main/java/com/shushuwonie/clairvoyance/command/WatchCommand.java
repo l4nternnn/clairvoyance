@@ -27,7 +27,7 @@ public class WatchCommand {
                                 CommandRegistryAccess registryAccess,
                                 CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(CommandManager.literal("watch")
-                .then(CommandManager.argument("target", StringArgumentType.word())
+                .then(CommandManager.argument("target", StringArgumentType.string())
                         .suggests((context, builder) -> CommandSource.suggestMatching(getAllEntityNames(context.getSource()), builder))
                         .executes(WatchCommand::executeWatchByName))
                 .executes(WatchCommand::executeWatchLooking)

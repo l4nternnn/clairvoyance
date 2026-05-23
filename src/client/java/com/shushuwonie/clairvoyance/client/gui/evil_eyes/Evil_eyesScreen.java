@@ -1,6 +1,7 @@
-package com.shushuwonie.client.gui.evil_eyes;
+package com.shushuwonie.clairvoyance.client.gui.evil_eyes;
 
 import com.shushuwonie.clairvoyance.network.clairvoyance.SelectViewPayload;
+import com.shushuwonie.clairvoyance.network.clairvoyance.UnmarkEntityPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -9,6 +10,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.text.Text;
 
+import net.minecraft.client.gui.Element;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +28,16 @@ public class Evil_eyesScreen extends Screen {
     public static void updateMarkedList(Map<UUID, Long> marks) {
         currentMarks.clear();
         currentMarks.putAll(marks);
+        refreshCurrentScreen();
+    }
+
+    // 立即从本地列表中移除指定实体并刷新GUI（无需等待服务器回包）
+    public static void removeFromLocalList(UUID entityUuid) {
+        currentMarks.remove(entityUuid);
+        refreshCurrentScreen();
+    }
+
+    private static void refreshCurrentScreen() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.currentScreen instanceof Evil_eyesScreen screen) {
             screen.refreshEntityButtons();
@@ -56,20 +69,37 @@ public class Evil_eyesScreen extends Screen {
     }
 
     private void refreshEntityButtons() {
-        // 移除旧的实体按钮（保留其他组件）
-        children().removeIf(widget -> widget instanceof ButtonWidget);
+        // 隐藏旧的按钮并从children移除（drawables无法直接访问，通过visible=false避免渲染）
+        java.util.List<Element> oldBtns = new java.util.ArrayList<>();
+        for (Element child : children()) {
+            if (child instanceof ButtonWidget btn) {
+                btn.visible = false;
+                oldBtns.add(child);
+            }
+        }
+        children().removeAll(oldBtns);
         int yOffset = 40;
         for (UUID uuid : currentMarks.keySet()) {
             String name = getEntityName(uuid);
-            ButtonWidget btn = ButtonWidget.builder(Text.literal(name), button -> {
+            int btnWidth = leftWidth - 10 - 20;
+            // 实体名称按钮 - 点击选择观看
+            ButtonWidget nameBtn = ButtonWidget.builder(Text.literal(name), button -> {
                         ClientPlayNetworking.send(new SelectViewPayload(uuid));
                         if (client != null && client.player != null) {
                             client.player.sendMessage(Text.literal("§a正在切换到 " + name), true);
                         }
                     })
-                    .dimensions(panelX + 5, panelY + yOffset, leftWidth - 10, 20)
+                    .dimensions(panelX + 5, panelY + yOffset, btnWidth, 20)
                     .build();
-            addDrawableChild(btn);
+            addDrawableChild(nameBtn);
+            // 删除按钮 - 点击取消标记（立即本地移除 + 服务端同步）
+            ButtonWidget delBtn = ButtonWidget.builder(Text.literal("✕"), button -> {
+                        removeFromLocalList(uuid);
+                        ClientPlayNetworking.send(new UnmarkEntityPayload(uuid));
+                    })
+                    .dimensions(panelX + 5 + btnWidth + 2, panelY + yOffset, 18, 20)
+                    .build();
+            addDrawableChild(delBtn);
             yOffset += 25;
             if (yOffset > panelHeight - 30) break;
         }

@@ -26,4 +26,7 @@ public class ModModelLayers {
     public static final EntityModelLayer RIGHT_ARM_SLIM = new EntityModelLayer(Identifier.
             of("clairvoyance", "right_arm"), "slim");
 
+    public static final EntityModelLayer HEAD = new EntityModelLayer(Identifier.
+            of("clairvoyance", "head"), "main");
+
 }

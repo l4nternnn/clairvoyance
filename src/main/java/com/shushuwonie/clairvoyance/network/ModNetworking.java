@@ -32,6 +32,7 @@ public class ModNetworking {
     // 注册所有 C2S 包（只需要服务端）
     public static void registerC2SPackets() {
         MarkEntityPayload.register();
+        UnmarkEntityPayload.register();
         SelectViewPayload.register();  // 注意：你的 SelectViewPayload 实际上是 S2C？请确认
         ExitViewPayload.register();
         MagicPacket.register();

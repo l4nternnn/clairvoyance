@@ -95,7 +95,7 @@ public class TorsoBlock extends BlockWithEntity {
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        System.out.println("TorsoBlock.createBlockEntity called at " + pos);
+//        System.out.println("TorsoBlock.createBlockEntity called at " + pos);
         return new TorsoBlockEntity(pos, state);
     }
 
@@ -115,6 +115,9 @@ public class TorsoBlock extends BlockWithEntity {
                 NbtCompound nbt = customData.copyNbt();
                 if (nbt.contains("arm_model")) {
                     nbt.getString("arm_model").ifPresent(torsoEntity::setSkinType);
+                }
+                if (nbt.contains("local_skin")) {
+                    nbt.getString("local_skin").ifPresent(torsoEntity::setLocalSkin);
                 }
             }
             torsoEntity.markDirty();

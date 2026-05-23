@@ -52,6 +52,8 @@ public class Evil_Eyes {
     private static final Map<UUID, Map<UUID, Long>> playerMarkedEntities = new ConcurrentHashMap<>();
     // 手动取消标记冷却：被取消的实体在100 tick内不会被锚点/自动标记重新加回
     private static final Map<UUID, Long> recentlyUnmarked = new ConcurrentHashMap<>();
+    // 超出范围追踪：玩家UUID -> (实体UUID -> 首次检测到超出范围的tick)
+    private static final Map<UUID, Map<UUID, Long>> outOfRangeSince = new ConcurrentHashMap<>();
     private static final Logger LOGGER = LoggerFactory.getLogger("Clairvoyance");
 
 
@@ -312,6 +314,20 @@ public class Evil_Eyes {
             }
         });
 
+// 1.5 手动取消标记（从GUI点击删除）
+        ServerPlayNetworking.registerGlobalReceiver(UnmarkEntityPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            UUID targetUuid = payload.entityUuid();
+            Map<UUID, Long> marks = playerMarkedEntities.get(player.getUuid());
+            if (marks == null || !marks.containsKey(targetUuid)) return;
+            marks.remove(targetUuid);
+            recentlyUnmarked.put(targetUuid, player.getWorld().getTime() + 100);
+            int stage = getPlayerStage(player, configManager);
+            int maxMarks = configManager.getStageConfig(stage).maxMarks();
+            sendMarkedListToClient(player, marks, maxMarks);
+            player.sendMessage(Text.literal("§e已移除标记"), true);
+        });
+
 // 2. 观看计时消耗每日次数 + 超时强制退出
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             long now = server.getWorld(World.OVERWORLD).getTime();
@@ -412,13 +428,16 @@ public class Evil_Eyes {
             return true;
         });
 
-        // 6. 清理过期标记和死亡实体
+        // 6. 清理过期标记、死亡实体和超出范围实体
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             long now = server.getWorld(World.OVERWORLD).getTime();
             for (Map.Entry<UUID, Map<UUID, Long>> playerEntry : playerMarkedEntities.entrySet()) {
                 UUID playerUuid = playerEntry.getKey();
                 Map<UUID, Long> marks = playerEntry.getValue();
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerUuid);
                 boolean changed = false;
+                // 获取该玩家超出范围的追踪表
+                Map<UUID, Long> outRange = outOfRangeSince.computeIfAbsent(playerUuid, k -> new ConcurrentHashMap<>());
                 Iterator<Map.Entry<UUID, Long>> it = marks.entrySet().iterator();
                 while (it.hasNext()) {
                     Map.Entry<UUID, Long> entry = it.next();
@@ -429,15 +448,45 @@ public class Evil_Eyes {
                     if (expire <= now || dead) {
                         it.remove();
                         changed = true;
+                        outRange.remove(entityUuid);
+                        continue;
+                    }
+                    // 超出范围检测（仅当玩家在线时）
+                    if (player != null && entity != null) {
+                        boolean inRange = entity.squaredDistanceTo(player) < 30 * 30;
+                        // 检查是否在锚点30格内
+                        if (!inRange) {
+                            for (Map.Entry<UUID, UUID> ae : armorStandOwner.entrySet()) {
+                                if (!ae.getValue().equals(playerUuid)) continue;
+                                Entity anchor = server.getWorld(World.OVERWORLD).getEntity(ae.getKey());
+                                if (anchor != null && anchor.isAlive() && entity.squaredDistanceTo(anchor) < 30 * 30) {
+                                    inRange = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (inRange) {
+                            outRange.remove(entityUuid);
+                        } else {
+                            Long since = outRange.get(entityUuid);
+                            if (since == null) {
+                                outRange.put(entityUuid, now);
+                            } else if (now - since >= 20) {
+                                it.remove();
+                                changed = true;
+                                outRange.remove(entityUuid);
+                            }
+                        }
                     }
                 }
-                if (changed) {
-                    ServerPlayerEntity player = server.getPlayerManager().getPlayer(playerUuid);
-                    if (player != null) {
-                        int stage = getPlayerStage(player, configManager);
-                        int maxMarks = configManager.getStageConfig(stage).maxMarks();
-                        sendMarkedListToClient(player, marks, maxMarks);
-                    }
+                // 清理该玩家空的追踪表
+                if (outRange.isEmpty()) {
+                    outOfRangeSince.remove(playerUuid);
+                }
+                if (changed && player != null) {
+                    int stage = getPlayerStage(player, configManager);
+                    int maxMarks = configManager.getStageConfig(stage).maxMarks();
+                    sendMarkedListToClient(player, marks, maxMarks);
                 }
             }
             playerMarkedEntities.entrySet().removeIf(entry -> entry.getValue().isEmpty());

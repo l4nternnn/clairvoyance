@@ -3,6 +3,7 @@ package com.shushuwonie.clairvoyance.item.modblock;
 import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlock;
 import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlock;
 import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlock;
+import com.shushuwonie.clairvoyance.features.block.head.HeadBlock;
 import com.shushuwonie.clairvoyance.features.block.leg.RightLegBlock;
 import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlock;
 import net.minecraft.block.AbstractBlock;
@@ -40,6 +41,9 @@ public class ModBlocks {
             RightLegBlock::new,
             AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).strength(1.0F, 1.0F).pistonBehavior(PistonBehavior.DESTROY));
 
+    public static final Block HEAD = register("head",
+            HeadBlock::new,
+            AbstractBlock.Settings.create().mapColor(MapColor.OAK_TAN).strength(1.0F, 1.0F).pistonBehavior(PistonBehavior.DESTROY));
 
     // 通用注册方法（模仿原版 Blocks 中的 register）
     private static Block register(String path, Function<AbstractBlock.Settings, Block> factory, AbstractBlock.Settings settings) {
