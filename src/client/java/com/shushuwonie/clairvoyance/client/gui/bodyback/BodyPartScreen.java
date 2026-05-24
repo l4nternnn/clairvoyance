@@ -24,7 +24,7 @@ public class BodyPartScreen extends HandledScreen<BodyPartScreenHandler> {
         // 设置标题和背包标题的坐标（相对于 GUI 左上角）
         this.titleX = 8+20;
         this.titleY = 6+20;
-        this.playerInventoryTitleX = 8;
+        this.playerInventoryTitleX = 8 + 20;
         this.playerInventoryTitleY = this.backgroundHeight - 94;
     }
 

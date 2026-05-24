@@ -26,6 +26,7 @@ import com.shushuwonie.clairvoyance.client.renderer.arm.LeftArmSpecialModelRende
 import com.shushuwonie.clairvoyance.client.renderer.arm.RightArmSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.LeftLegSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.leg.RightLegSpecialModelRenderer;
+import com.shushuwonie.clairvoyance.client.renderer.special.CombinedBodySpecialModelRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.torso.TorsoBlockEntityRenderer;
 import com.shushuwonie.clairvoyance.client.renderer.torso.TorsoSpecialModelRenderer;
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
@@ -524,6 +525,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "left_leg"), LeftLegSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "right_leg"), RightLegSpecialModelRenderer.Unbaked.CODEC);
 		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "head"), HeadSpecialModelRenderer.Unbaked.CODEC);
+		SpecialModelTypes.ID_MAPPER.put(Identifier.of("clairvoyance", "combined_body"), CombinedBodySpecialModelRenderer.Unbaked.CODEC);
 
 
 		HandledScreens.register(ModScreenHandlers.BODY_PART_SCREEN_HANDLER, BodyPartScreen::new);

@@ -30,6 +30,14 @@ public class BodyPartScreenHandler extends ScreenHandler {
         addPlayerInventorySlots(playerInventory);
     }
 
+    // 通用构造器（用于展示实体背包）
+    public BodyPartScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory) {
+        super(ModScreenHandlers.BODY_PART_SCREEN_HANDLER, syncId);
+        this.inventory = inventory;
+        addBlockEntitySlots();
+        addPlayerInventorySlots(playerInventory);
+    }
+
     private void addBlockEntitySlots() {
         // 3×3 网格，位置 (62,17) 开始，间隔 18
         for (int row = 0; row < 3; row++) {

@@ -16,6 +16,9 @@ public class OtherPlayerInventoryScreen extends HandledScreen<OtherPlayerInvento
     public OtherPlayerInventoryScreen(OtherPlayerInventoryScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         this.backgroundHeight = 276;
+        this.titleX = 8;
+        this.titleY = 8;
+        this.playerInventoryTitleX = 8;
         this.playerInventoryTitleY = this.backgroundHeight - 94;
     }
 
