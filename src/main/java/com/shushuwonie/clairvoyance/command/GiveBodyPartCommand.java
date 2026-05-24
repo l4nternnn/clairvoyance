@@ -21,7 +21,7 @@ import net.minecraft.text.Text;
 public class GiveBodyPartCommand {
     // 内置皮肤列表（文件名不含扩展名）
     public static final String[] LOCAL_SKINS = {
-        "anan", "-coco-", "ema", "hanna", "hiro", "mago", "miria", "mll", "nnk",
+        "anan", "coco", "ema", "hanna", "hiro", "mago", "miria", "mll", "nnk",
         "noa", "reiya", "sherry", "yalisa", "yuki", " kanshou"
     };
 
