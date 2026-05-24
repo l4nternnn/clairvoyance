@@ -1,0 +1,9 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "clairvoyance:item/combined_body",
+    "model": {
+      "type": "clairvoyance:combined_body"
+    }
+  }
+}

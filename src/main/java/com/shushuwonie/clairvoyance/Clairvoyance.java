@@ -586,6 +586,7 @@ public class Clairvoyance implements ModInitializer {
 						interaction.setInteractionHeight(0.75f);
 						world.spawnEntity(interaction);
 						INTERACTION_TO_DISPLAY.put(interaction.getUuid(), display.getUuid());
+						DISPLAY_TO_INTERACTION.put(display.getUuid(), interaction.getUuid());
 						if (i ==1) {
 							BODY_PART_DISPLAY_INVENTORIES.putIfAbsent(display.getUuid(), DefaultedList.ofSize(9, ItemStack.EMPTY));
 						}
