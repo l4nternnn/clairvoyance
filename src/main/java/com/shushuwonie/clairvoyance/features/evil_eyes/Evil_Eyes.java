@@ -189,11 +189,34 @@ public class Evil_Eyes {
     }
 
     /**
-     * 清除指定玩家的所有锚点盔甲架
-     * @param playerUuid 玩家 UUID
-     * @return 清除的锚点数量
+     * 程序化添加标记（供 signed_evil 等功能使用）
      */
-    public static int clearAnchorsForPlayer(UUID playerUuid, MinecraftServer server) {
+    public static void addMark(UUID markerUuid, UUID targetUuid, long expiryTick) {
+        playerMarkedEntities.computeIfAbsent(markerUuid, k -> new ConcurrentHashMap<>())
+            .put(targetUuid, expiryTick);
+    }
+
+    /**
+     * 检查标记是否活跃
+     */
+    public static boolean hasActiveMark(UUID markerUuid, UUID targetUuid) {
+        Map<UUID, Long> marks = playerMarkedEntities.get(markerUuid);
+        return marks != null && marks.containsKey(targetUuid);
+    }
+
+
+    /**
+     * 同步标记列表到客户端（供 signed_evil 等功能使用）
+     */
+    public static void syncMarkedListToClient(ServerPlayerEntity marker) {
+        Map<UUID, Long> marks = playerMarkedEntities.get(marker.getUuid());
+        if (marks == null) return;
+        int stage = getPlayerStage(marker, configManager);
+        int maxMarks = configManager.getStageConfig(stage).maxMarks();
+        sendMarkedListToClient(marker, marks, maxMarks);
+    }
+
+public static int clearAnchorsForPlayer(UUID playerUuid, MinecraftServer server) {
         int count = 0;
         World world = server.getWorld(World.OVERWORLD);
         if (world == null) return 0;
