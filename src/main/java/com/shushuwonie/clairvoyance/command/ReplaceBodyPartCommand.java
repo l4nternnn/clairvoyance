@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.shushuwonie.clairvoyance.Clairvoyance;
 import com.shushuwonie.clairvoyance.item.modblock.moditems.Assembly_ModItems;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
@@ -34,9 +35,9 @@ public class ReplaceBodyPartCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher,
                                 CommandRegistryAccess registryAccess,
                                 CommandManager.RegistrationEnvironment environment) {
-        dispatcher.register(CommandManager.literal("replacebodypart-替换肢体")
+        dispatcher.register(CommandManager.literal("clairvoyance-肢体|替换")
                 .requires(source -> source.hasPermissionLevel(2))
-                .then(CommandManager.literal("localskin")
+                .then(CommandManager.literal("localskin-内置")
                         .then(CommandManager.argument("skinName", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(GiveBodyPartCommand.LOCAL_SKINS, builder))
                                 .executes(ctx -> replaceWithLocalSkin(ctx, false))
@@ -45,13 +46,16 @@ public class ReplaceBodyPartCommand {
                                 )
                         )
                 )
-                .then(CommandManager.literal("player")
+                .then(CommandManager.literal("player-玩家")
                         .then(CommandManager.argument("playerName", StringArgumentType.string())
                                 .executes(ctx -> replaceWithPlayer(ctx, false))
                                 .then(CommandManager.literal("slim")
                                         .executes(ctx -> replaceWithPlayer(ctx, true))
                                 )
                         )
+                )
+                .then(CommandManager.literal("split-分离")
+                        .executes(ReplaceBodyPartCommand::splitCombined)
                 )
         );
     }
@@ -142,5 +146,12 @@ public class ReplaceBodyPartCommand {
         if (item == Assembly_ModItems.LEFT_LEG_ITEM) return "左腿";
         if (item == Assembly_ModItems.RIGHT_LEG_ITEM) return "右腿";
         return "";
+    }
+
+    private static int splitCombined(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
+        ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+        int count = Clairvoyance.splitCombinedBody(player);
+        ctx.getSource().sendFeedback(() -> Text.literal("已将 " + count + " 个整体肢体分离为单独肢体"), true);
+        return count;
     }
 }

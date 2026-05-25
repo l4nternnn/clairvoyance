@@ -14,17 +14,20 @@ import java.util.Set;
 
 public class CombinedBodySpecialModelRenderer extends BodyPartSpecialModelRenderer {
     private final PlayerEntityModel model;
+    private final PlayerEntityModel slimModel;
 
     public CombinedBodySpecialModelRenderer(LoadedEntityModels entityModels) {
         super(entityModels);
         this.model = new PlayerEntityModel(entityModels.getModelPart(EntityModelLayers.PLAYER), false);
+        this.slimModel = new PlayerEntityModel(entityModels.getModelPart(EntityModelLayers.PLAYER_SLIM), true);
     }
 
     @Override
     protected void renderModel(MatrixStack matrices, VertexConsumerProvider vertexConsumers,
                                RenderLayer renderLayer, int light, int overlay, Data data) {
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(renderLayer);
-        model.render(matrices, vertexConsumer, light, overlay);
+        boolean slim = "slim".equals(data.armModel());
+        (slim ? slimModel : model).render(matrices, vertexConsumer, light, overlay);
     }
 
     @Override

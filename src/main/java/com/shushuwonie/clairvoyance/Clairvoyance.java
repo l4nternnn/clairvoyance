@@ -506,9 +506,10 @@ public class Clairvoyance implements ModInitializer {
 			CARRIED_COOLDOWN.values().removeIf(expiry -> expiry <= now);
 		});
 
-		// Player death drops body parts as item display entities
+				// Player death drops body parts / combined body as interactive display entities
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-			if (entity instanceof ServerPlayerEntity player && player.getCommandTags().contains("dead_body")) {
+			if (entity instanceof ServerPlayerEntity player) {
+				if (!player.getCommandTags().contains("dead_body") && !player.getCommandTags().contains("dead_part")) return;
 				ServerWorld world = (ServerWorld) player.getWorld();
 				BlockPos deathPos = player.getBlockPos();
 				ProfileComponent profile = new ProfileComponent(player.getGameProfile());
@@ -517,7 +518,7 @@ public class Clairvoyance implements ModInitializer {
 				// Check if player has a tag matching a local skin name
 				String detectedLocalSkin = null;
 				for (String tag : player.getCommandTags()) {
-					if (tag.equals("dead_body")) continue;
+					if (tag.equals("dead_body") || tag.equals("dead_part")) continue;
 					for (String skin : GiveBodyPartCommand.LOCAL_SKINS) {
 						if (skin.equals(tag)) {
 							detectedLocalSkin = skin;
@@ -527,73 +528,88 @@ public class Clairvoyance implements ModInitializer {
 					if (detectedLocalSkin != null) break;
 				}
 
+				if (player.getCommandTags().contains("dead_part")) {
+					// Spawn 6 individual body parts
+					Item[] partItems = new Item[]{
+						Assembly_ModItems.HEAD_ITEM,
+						Assembly_ModItems.TORSO_ITEM,
+						Assembly_ModItems.LEFT_ARM_ITEM,
+						Assembly_ModItems.RIGHT_ARM_ITEM,
+						Assembly_ModItems.LEFT_LEG_ITEM,
+						Assembly_ModItems.RIGHT_LEG_ITEM
+					};
+					String[] chineseNames = new String[]{"头部","躯干", "左臂", "右臂", "左腿", "右腿"};
+					double[] offsetsX = new double[]	{0.0,  0,  -0.6,  +0.23,   -0.3,   +0.3};
+					double[] offsetsY = new double[]	{0.2,  0,  -0.24,  -0.24,   -0.2,   -0.2};
+					double[] offsetsZ = new double[]	{0.7,  0,  -0.05,  -0.1,	  -1.1,   -1.1};
 
-				Item[] partItems = new Item[]{
-					Assembly_ModItems.HEAD_ITEM,
-					Assembly_ModItems.TORSO_ITEM,
-					Assembly_ModItems.LEFT_ARM_ITEM,
-					Assembly_ModItems.RIGHT_ARM_ITEM,
-					Assembly_ModItems.LEFT_LEG_ITEM,
-					Assembly_ModItems.RIGHT_LEG_ITEM
-				};
-				//修改相对偏移
-				String[] chineseNames = new String[]{"头部","躯干", "左臂", "右臂", "左腿", "右腿"};
-				double[] offsetsX = new double[]	{0.0,  0,  -0.6,  +0.23,   -0.3,   +0.3};
-				double[] offsetsY = new double[]	{0.2,  0,  -0.24,  -0.24,   -0.2,   -0.2};
-				double[] offsetsZ = new double[]	{0.7,  0,  -0.05,  -0.1,	  -1.1,   -1.1};
+					for (int i = 0; i < 6; i++) {
+						ItemStack stack = new ItemStack(partItems[i]);
 
-				for (int i = 0; i < 6; i++) {
-					ItemStack stack = new ItemStack(partItems[i]);
+						if (detectedLocalSkin != null) {
+							NbtCompound nbt = new NbtCompound();
+							nbt.putString("local_skin", detectedLocalSkin);
+							nbt.putString("arm_model", "slim");
+							stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+						} else {
+							stack.set(DataComponentTypes.PROFILE, profile);
+						}
 
-					if (detectedLocalSkin != null) {
-						// Use local skin instead of player profile
-						NbtCompound nbt = new NbtCompound();
-						nbt.putString("local_skin", detectedLocalSkin);
-						nbt.putString("arm_model", "slim");
-						stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
-					} else {
-						// Original behavior: use player profile
-						stack.set(DataComponentTypes.PROFILE, profile);
-					}
+						Text displayName = Text.literal("§6§k13§4" + playerName + "§r§6§k13§r" + "的" + chineseNames[i]);
+						stack.set(DataComponentTypes.CUSTOM_NAME, displayName);
 
-					Text displayName = Text.literal("§6§k13§4" + playerName + "§r§6§k13§r" + "的" + chineseNames[i]);
-					stack.set(DataComponentTypes.CUSTOM_NAME, displayName);
+						ItemDisplayEntity display = EntityType.ITEM_DISPLAY.create((World) world, SpawnReason.TRIGGERED);
+						if (display != null) {
+							display.setItemStack(stack);
+							if (LEFT_ROTATION_KEY != null) {
+								if (i == 0) {
+									float headYaw = player.getYaw();
+									float headPitch = player.getPitch();
+									Quaternionf headRot = new Quaternionf().rotateY((float) Math.toRadians(-headYaw)).rotateX((float) Math.toRadians(headPitch));
+									display.getDataTracker().set(LEFT_ROTATION_KEY, headRot);
+								} else {
+									display.getDataTracker().set(LEFT_ROTATION_KEY, new Quaternionf(PART_ROTATIONS[i]));
+								}
+							}
+							display.setPosition(
+									deathPos.getX() + 0.5 + offsetsX[i],
+									deathPos.getY() + 0.3 + offsetsY[i],
+									deathPos.getZ() + 0.5 + offsetsZ[i]
+							);
 
-					ItemDisplayEntity display = EntityType.ITEM_DISPLAY.create((World) world, SpawnReason.TRIGGERED);
-					if (display != null) {
-						display.setItemStack(stack);
-						if (LEFT_ROTATION_KEY != null) {
-							if (i == 0) {
-								float headYaw = player.getYaw();
-								float headPitch = player.getPitch();
-								Quaternionf headRot = new Quaternionf().rotateY((float) Math.toRadians(-headYaw)).rotateX((float) Math.toRadians(headPitch));
-								display.getDataTracker().set(LEFT_ROTATION_KEY, headRot);
-							} else {
-								display.getDataTracker().set(LEFT_ROTATION_KEY, new Quaternionf(PART_ROTATIONS[i]));
+							world.spawnEntity(display);
+							InteractionEntity interaction = new InteractionEntity(EntityType.INTERACTION, world);
+							interaction.setPosition(display.getPos());
+							interaction.setInteractionWidth(0.75f);
+							interaction.setInteractionHeight(0.75f);
+							world.spawnEntity(interaction);
+							INTERACTION_TO_DISPLAY.put(interaction.getUuid(), display.getUuid());
+							DISPLAY_TO_INTERACTION.put(display.getUuid(), interaction.getUuid());
+							if (i == 1) {
+								DefaultedList<ItemStack> hotbarInv = DefaultedList.ofSize(9, ItemStack.EMPTY);
+								for (int j = 0; j < 9; j++) {
+									hotbarInv.set(j, player.getInventory().getStack(j));
+								}
+								BODY_PART_DISPLAY_INVENTORIES.putIfAbsent(display.getUuid(), hotbarInv);
 							}
 						}
-						display.setPosition(
-								deathPos.getX() + 0.5 + offsetsX[i],
-								deathPos.getY() + 0.3 + offsetsY[i],
-								deathPos.getZ() + 0.5 + offsetsZ[i]
-						);
-
-
-						world.spawnEntity(display);
-						InteractionEntity interaction = new InteractionEntity(EntityType.INTERACTION, world);
-						interaction.setPosition(display.getPos());
-						interaction.setInteractionWidth(0.75f);
-						interaction.setInteractionHeight(0.75f);
-						world.spawnEntity(interaction);
-						INTERACTION_TO_DISPLAY.put(interaction.getUuid(), display.getUuid());
-						DISPLAY_TO_INTERACTION.put(display.getUuid(), interaction.getUuid());
-						if (i ==1) {
-							BODY_PART_DISPLAY_INVENTORIES.putIfAbsent(display.getUuid(), DefaultedList.ofSize(9, ItemStack.EMPTY));
-						}
+					}
+				} else if (player.getCommandTags().contains("dead_body")) {
+					// Spawn single combined body display entity
+					Vec3d pos = new Vec3d(deathPos.getX() + 0.5, deathPos.getY() + 0.3, deathPos.getZ() + 0.5);
+					DefaultedList<ItemStack> hotbarInv = DefaultedList.ofSize(9, ItemStack.EMPTY);
+					for (int j = 0; j < 9; j++) {
+						hotbarInv.set(j, player.getInventory().getStack(j));
+					}
+					if (detectedLocalSkin != null) {
+						createCombinedDisplay(world, pos, detectedLocalSkin, hotbarInv, null);
+					} else {
+						createCombinedDisplay(world, pos, playerName, hotbarInv, profile);
 					}
 				}
 			}
 		});
+
 		// Place body part item as interactive display entity (right-click on block)
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 			if (world.isClient) return ActionResult.PASS;
@@ -672,6 +688,12 @@ public class Clairvoyance implements ModInitializer {
 			if (world.isClient) return ActionResult.PASS;
 			if (!(player instanceof ServerPlayerEntity)) return ActionResult.PASS;
 			ItemStack stack = player.getMainHandStack();
+			if (isCombinedBodyItem(stack)) {
+				if (player.isSneaking()) return ActionResult.PASS;
+				BlockPos placePos = player.getBlockPos();
+				placeCombinedBody(world, placePos, stack, (ServerPlayerEntity) player);
+				return ActionResult.SUCCESS;
+			}
 			if (!BODY_PART_DISPLAY_ITEMS.contains(stack.getItem())) return ActionResult.PASS;
 			if (player.isSneaking()) return ActionResult.PASS;
 			BlockPos placePos = player.getBlockPos();
@@ -721,6 +743,11 @@ public class Clairvoyance implements ModInitializer {
 			if (world.isClient) return ActionResult.PASS;
 			if (!(player instanceof ServerPlayerEntity)) return ActionResult.PASS;
 			ItemStack stack = player.getMainHandStack();
+			if (isCombinedBodyItem(stack)) {
+				BlockPos placePos = hitResult.getBlockPos().offset(hitResult.getSide());
+				placeCombinedBody(world, placePos, stack, (ServerPlayerEntity) player);
+				return ActionResult.SUCCESS;
+			}
 			if (!BODY_PART_DISPLAY_ITEMS.contains(stack.getItem())) return ActionResult.PASS;
 			BlockPos placePos = hitResult.getBlockPos().offset(hitResult.getSide());
 			ItemDisplayEntity display = EntityType.ITEM_DISPLAY.create(world, SpawnReason.TRIGGERED);
@@ -1003,7 +1030,7 @@ public class Clairvoyance implements ModInitializer {
 			for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
 				if (p.getCommandTags().contains("kebao") && !p.isCreative()) {
 					ItemStack held = p.getMainHandStack();
-					if (!held.isEmpty() && BODY_PART_DISPLAY_ITEMS.contains(held.getItem())) {
+					if (!held.isEmpty() && (BODY_PART_DISPLAY_ITEMS.contains(held.getItem()) || isCombinedBodyItem(held))) {
 						if (!p.getCommandTags().contains("qiangzhiai") && !p.getCommandTags().contains("strong_power")) {
 							p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 0, false, false, true));
 						}
@@ -1059,7 +1086,7 @@ public class Clairvoyance implements ModInitializer {
 			});
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			dispatcher.register(CommandManager.literal("clairvoyance-合并肢体")
+			dispatcher.register(CommandManager.literal("clairvoyance-肢体|合并")
 					.requires(source -> source.hasPermissionLevel(2))
 					.executes(context -> {
 						ServerPlayerEntity player = context.getSource().getPlayer();
@@ -1177,7 +1204,8 @@ public class Clairvoyance implements ModInitializer {
 		}
 
 		// 创建组合展示实体
-		createCombinedDisplay(world, mergePos, skinName, torsoInv, profile);
+		Vec3d adjustedPos = mergePos.add(0, 0.0, 0);
+		createCombinedDisplay(world, adjustedPos, skinName, torsoInv, profile);
 
 		player.sendMessage(Text.literal("§a成功合并肢体！"), false);
 		return 1;
@@ -1192,6 +1220,139 @@ public class Clairvoyance implements ModInitializer {
 		if (item == Assembly_ModItems.LEFT_LEG_ITEM) return "left_leg";
 		if (item == Assembly_ModItems.RIGHT_LEG_ITEM) return "right_leg";
 		return null;
+	}
+
+	private static boolean isCombinedBodyItem(ItemStack stack) {
+		Identifier model = stack.get(DataComponentTypes.ITEM_MODEL);
+		return model != null && model.equals(Identifier.of("clairvoyance", "combined_body"));
+	}
+
+	private static void placeCombinedBody(World world, BlockPos pos, ItemStack stack, ServerPlayerEntity player) {
+		ProfileComponent profile = stack.get(DataComponentTypes.PROFILE);
+		String localSkin = null;
+		DefaultedList<ItemStack> savedInv = null;
+
+		NbtComponent customData = stack.get(DataComponentTypes.CUSTOM_DATA);
+		if (customData != null) {
+			NbtCompound root = customData.copyNbt();
+			if (root.contains("local_skin")) {
+				localSkin = root.getString("local_skin").orElse(null);
+			}
+			NbtElement invElem = root.get("body_part_inv_items");
+			if (invElem instanceof NbtList itemsList) {
+				savedInv = DefaultedList.ofSize(9, ItemStack.EMPTY);
+				for (int i = 0; i < Math.min(itemsList.size(), 9); i++) {
+					NbtCompound tag = itemsList.getCompound(i).orElse(new NbtCompound());
+					if (!tag.isEmpty()) {
+						savedInv.set(i, ItemStack.CODEC.parse(NbtOps.INSTANCE, tag).result().orElse(ItemStack.EMPTY));
+					}
+				}
+			}
+		}
+
+		createCombinedDisplay((ServerWorld) world, Vec3d.of(pos).add(0.5, 0.2, 0.5),
+			localSkin != null ? localSkin : "ema", savedInv, profile);
+
+		if (!player.isCreative()) {
+			stack.decrement(1);
+			if (stack.isEmpty()) {
+				player.getInventory().removeOne(stack);
+			}
+		}
+	}
+
+	public static int splitCombinedBody(ServerPlayerEntity player) {
+		ServerWorld world = (ServerWorld) player.getWorld();
+		Box box = new Box(player.getBlockPos()).expand(3);
+		int count = 0;
+
+		for (ItemDisplayEntity display : world.getEntitiesByClass(ItemDisplayEntity.class, box, e -> {
+			ItemStack s = e.getItemStack();
+			Identifier model = s.get(DataComponentTypes.ITEM_MODEL);
+			return model != null && model.equals(Identifier.of("clairvoyance", "combined_body"));
+		})) {
+			Vec3d pos = display.getPos();
+			ItemStack combinedStack = display.getItemStack();
+			ProfileComponent profile = combinedStack.get(DataComponentTypes.PROFILE);
+			String localSkin = null;
+			DefaultedList<ItemStack> savedInv = null;
+
+			NbtComponent customData = combinedStack.get(DataComponentTypes.CUSTOM_DATA);
+			if (customData != null) {
+				NbtCompound root = customData.copyNbt();
+				if (root.contains("local_skin")) {
+					localSkin = root.getString("local_skin").orElse(null);
+				}
+				NbtElement invElem = root.get("body_part_inv_items");
+				if (invElem instanceof NbtList itemsList) {
+					savedInv = DefaultedList.ofSize(9, ItemStack.EMPTY);
+					for (int i = 0; i < Math.min(itemsList.size(), 9); i++) {
+						NbtCompound tag = itemsList.getCompound(i).orElse(new NbtCompound());
+						if (!tag.isEmpty()) {
+							savedInv.set(i, ItemStack.CODEC.parse(NbtOps.INSTANCE, tag).result().orElse(ItemStack.EMPTY));
+						}
+					}
+				}
+			}
+			DefaultedList<ItemStack> mapInv = BODY_PART_DISPLAY_INVENTORIES.get(display.getUuid());
+			if (mapInv != null) savedInv = mapInv;
+
+			UUID interactionUuid = DISPLAY_TO_INTERACTION.get(display.getUuid());
+			if (interactionUuid != null) {
+				Entity interaction = world.getEntity(interactionUuid);
+				if (interaction != null) interaction.remove(Entity.RemovalReason.DISCARDED);
+				INTERACTION_TO_DISPLAY.remove(interactionUuid);
+				DISPLAY_TO_INTERACTION.remove(display.getUuid());
+			}
+			BODY_PART_DISPLAY_INVENTORIES.remove(display.getUuid());
+			display.remove(Entity.RemovalReason.DISCARDED);
+
+			Item[] partItems = new Item[]{
+				Assembly_ModItems.HEAD_ITEM, Assembly_ModItems.TORSO_ITEM,
+				Assembly_ModItems.LEFT_ARM_ITEM, Assembly_ModItems.RIGHT_ARM_ITEM,
+				Assembly_ModItems.LEFT_LEG_ITEM, Assembly_ModItems.RIGHT_LEG_ITEM
+			};
+			String[] chineseNames = new String[]{"头部", "躯干", "左臂", "右臂", "左腿", "右腿"};
+			double[] offsetsX = new double[]{0.0, 0, -0.6, 0.23, -0.3, 0.3};
+			double[] offsetsY = new double[]{0.2, 0, -0.24, -0.24, -0.2, -0.2};
+			double[] offsetsZ = new double[]{0.7, 0, -0.05, -0.1, -1.1, -1.1};
+
+			for (int i = 0; i < 6; i++) {
+				ItemStack stack = new ItemStack(partItems[i]);
+				if (localSkin != null) {
+					NbtCompound nbt = new NbtCompound();
+					nbt.putString("local_skin", localSkin);
+					stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+				} else if (profile != null) {
+					stack.set(DataComponentTypes.PROFILE, profile);
+				}
+				Text displayName = Text.literal("§6§k13§4" + player.getName().getString() + "§r§6§k13§r的" + chineseNames[i]);
+				stack.set(DataComponentTypes.CUSTOM_NAME, displayName);
+
+				ItemDisplayEntity partDisplay = EntityType.ITEM_DISPLAY.create(world, SpawnReason.TRIGGERED);
+				if (partDisplay != null) {
+					partDisplay.setItemStack(stack);
+					if (LEFT_ROTATION_KEY != null) {
+						partDisplay.getDataTracker().set(LEFT_ROTATION_KEY, new Quaternionf(PART_ROTATIONS[i]));
+					}
+					partDisplay.setPosition(pos.x + offsetsX[i], pos.y + offsetsY[i], pos.z + offsetsZ[i]);
+					world.spawnEntity(partDisplay);
+
+					InteractionEntity interaction = new InteractionEntity(EntityType.INTERACTION, world);
+					interaction.setPosition(partDisplay.getPos());
+					interaction.setInteractionWidth(0.75f);
+					interaction.setInteractionHeight(0.75f);
+					world.spawnEntity(interaction);
+					INTERACTION_TO_DISPLAY.put(interaction.getUuid(), partDisplay.getUuid());
+					DISPLAY_TO_INTERACTION.put(partDisplay.getUuid(), interaction.getUuid());
+					if (i == 1 && savedInv != null) {
+						BODY_PART_DISPLAY_INVENTORIES.put(partDisplay.getUuid(), savedInv);
+					}
+				}
+			}
+			count++;
+		}
+		return count;
 	}
 
 	private static void createCombinedDisplay(ServerWorld world, Vec3d pos, String skinName, DefaultedList<ItemStack> torsoInv, ProfileComponent profile) {
@@ -1213,17 +1374,20 @@ public class Clairvoyance implements ModInitializer {
 		if (display != null) {
 			display.setItemStack(combinedStack);
 			display.setPosition(pos);
+			if (LEFT_ROTATION_KEY != null) {
+				display.getDataTracker().set(LEFT_ROTATION_KEY, new Quaternionf().rotateX((float) Math.toRadians(90)));
+			}
 			world.spawnEntity(display);
 
 			InteractionEntity interaction = new InteractionEntity(EntityType.INTERACTION, world);
-			interaction.setPosition(pos);
-			interaction.setInteractionWidth(1.0f);
-			interaction.setInteractionHeight(1.8f);
+			interaction.setPosition(pos.x, pos.y - 0.3, pos.z);
+			interaction.setInteractionWidth(0.9f);
+			interaction.setInteractionHeight(0.8f);
 			world.spawnEntity(interaction);
 			INTERACTION_TO_DISPLAY.put(interaction.getUuid(), display.getUuid());
 			DISPLAY_TO_INTERACTION.put(display.getUuid(), interaction.getUuid());
 			// Transfer torso backpack if it had items
-			if (torsoInv != null && !torsoInv.stream().allMatch(ItemStack::isEmpty)) {
+			if (torsoInv != null) {
 				BODY_PART_DISPLAY_INVENTORIES.put(display.getUuid(), torsoInv);
 			}
 		}

@@ -28,7 +28,7 @@ public class GiveBodyPartCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher,
                                 CommandRegistryAccess registryAccess,
                                 CommandManager.RegistrationEnvironment environment) {
-        dispatcher.register(CommandManager.literal("getbodypart-获取肢体")
+        dispatcher.register(CommandManager.literal("clairvoyance-肢体|获取")
                 .requires(source -> source.hasPermissionLevel(2))
                 .then(CommandManager.argument("target", EntityArgumentType.player())
                         // 原始：从指定玩家获取肢体

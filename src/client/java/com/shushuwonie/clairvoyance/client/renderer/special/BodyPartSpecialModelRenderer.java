@@ -30,7 +30,7 @@ public abstract class BodyPartSpecialModelRenderer implements SpecialModelRender
         }
     }
 
-    private final Data defaultData;
+    protected final Data defaultData;
 
     public BodyPartSpecialModelRenderer(LoadedEntityModels entityModels) {
         var session = MinecraftClient.getInstance().getSession();
