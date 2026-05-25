@@ -41,6 +41,13 @@ import com.shushuwonie.clairvoyance.client.gui.CombinedConfigScreen;
 import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
 import com.shushuwonie.clairvoyance.item.config.GazeConfig;
 import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;
+import com.shushuwonie.clairvoyance.client.mirror.MirrorClientManager;
+import com.shushuwonie.clairvoyance.client.mirror.MirrorHudOverlay;
+import com.shushuwonie.clairvoyance.client.mirror.MirrorViewportRenderer;
+import com.shushuwonie.clairvoyance.network.mirror.MirrorStateS2CPacket;
+import com.shushuwonie.clairvoyance.network.mirror.MirrorToggleC2SPacket;
+import com.shushuwonie.clairvoyance.features.mirror_of_then_and_now;
+
 import com.shushuwonie.clairvoyance.network.openback.CarryEntityPayload;
 import com.shushuwonie.clairvoyance.network.openback.OpenOtherInventoryPayload;
 import com.shushuwonie.clairvoyance.network.openback.PlaceCarriedEntityPayload;
@@ -379,6 +386,26 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ClientCameraWatchReceiver.register();   // 注册网络接收
 		CameraWatchClientHandler.initialize();  // 注册 tick 事件
 
+		// 镜像视图 S2C 接收
+		ClientPlayNetworking.registerGlobalReceiver(MirrorStateS2CPacket.ID, (packet, context) -> {
+			context.client().execute(() -> MirrorClientManager.onStatePacket(packet));
+		});
+
+		// 注册镜像 HUD 叠加层
+		MirrorHudOverlay.register();
+
+		// 右键镜子物品发送切换包
+		UseItemCallback.EVENT.register((player, world, hand) -> {
+			if (player instanceof net.minecraft.client.network.ClientPlayerEntity && hand == net.minecraft.util.Hand.MAIN_HAND) {
+				net.minecraft.item.ItemStack stack = player.getMainHandStack();
+				if (stack.getItem() == mirror_of_then_and_now.MIRROR_ITEM) {
+					ClientPlayNetworking.send(new MirrorToggleC2SPacket());
+					return ActionResult.SUCCESS;
+				}
+			}
+			return ActionResult.PASS;
+		});
+
 		// 主动请求配置（C2S 包，无需注册接收）
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player != null && !hasRequestedConfig) {
@@ -465,6 +492,8 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.world == null) {
 				if (!anchors.isEmpty()) anchors.clear();
+				MirrorClientManager.reset();
+				MirrorViewportRenderer.cleanup();
 				return;
 			}
 			long now = System.currentTimeMillis();
@@ -656,6 +685,43 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ORBIT_IMAGES.add(new OrbitImage(Identifier.of("clairvoyance", "textures/gui/8.png"), 0.5, 5.0, -0.7 ,10.0f,225.0));
 		ORBIT_IMAGES.add(new OrbitImage(Identifier.of("clairvoyance", "textures/gui/7.png"), 0.5, 5.0, -0.7, 10.0f,270.0));
 		ORBIT_IMAGES.add(new OrbitImage(Identifier.of("clairvoyance", "textures/gui/8.png"), 0.5, 5.0, -0.7, 10.0f,315.0));
+	}
+
+	private static void renderMirrorMarkers(MatrixStack matrices, VertexConsumerProvider consumers) {
+		if (!MirrorClientManager.isActive()) return;
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.player == null || client.world == null) return;
+		Camera camera = client.gameRenderer.getCamera();
+		Vec3d targetPos = client.player.getPos();
+
+		for (int i = 0; i < 2; i++) {
+			MirrorClientManager.CameraData data = MirrorClientManager.getSlot(i);
+			if (!data.active()) continue;
+
+			Vec3d worldPos = data.pos();
+			int light = WorldRenderer.getLightmapCoordinates(client.world, BlockPos.ofFloored(worldPos));
+			int overlay = OverlayTexture.DEFAULT_UV;
+			float height = 2.0f;
+			float halfWidth = 0.08f;
+
+			matrices.push();
+			matrices.translate(worldPos.x - targetPos.x, worldPos.y - targetPos.y, worldPos.z - targetPos.z);
+
+			int color = (i == 0) ? 0xFFFF55FF : 0xFF55FFFF;
+			RenderLayer layer = RenderLayer.getEntityTranslucentEmissive(Identifier.ofVanilla("textures/entity/beacon_beam.png"));
+			VertexConsumer vertex = consumers.getBuffer(layer);
+			Matrix4f posMat = matrices.peek().getPositionMatrix();
+
+			// Four vertical beams forming a pillar
+			float[][] offsets = {{-halfWidth, -halfWidth}, {halfWidth, -halfWidth}, {halfWidth, halfWidth}, {-halfWidth, halfWidth}};
+			for (float[] off : offsets) {
+				float ox = off[0];
+				float oz = off[1];
+				vertex.vertex(posMat, ox, height, oz).color((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 128).texture(0, 0).overlay(overlay).light(light).normal(0, 1, 0);
+				vertex.vertex(posMat, ox, 0, oz).color((color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 128).texture(0, 1).overlay(overlay).light(light).normal(0, 1, 0);
+			}
+			matrices.pop();
+		}
 	}
 
 	private static void renderOrbitTextures(MatrixStack matrices, VertexConsumerProvider consumers, PlayerEntity player) {

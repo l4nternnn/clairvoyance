@@ -4,7 +4,10 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ExampleClientMixin",
-		"HideHandMixin"
+		"HideHandMixin",
+		"CameraAccessor",
+		"FramebufferOverrideMixin",
+		"WorldRendererHookMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

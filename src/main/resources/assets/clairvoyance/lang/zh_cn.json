@@ -11,6 +11,11 @@
   "key.gazeguidance.stage_config": "打开注入界面",
   "category.gazeguidance": "视线诱导",
 
+
+  "item.clairvoyance.mirror_of_then_and_now": "|魔法:§6昔§r§5今§r之镜§r|",
+
+
+
   "item.clairvoyance.torso": "玩家躯干",
   "item.clairvoyance.left_arm": "玩家左臂",
   "item.clairvoyance.right_arm": "玩家右臂",

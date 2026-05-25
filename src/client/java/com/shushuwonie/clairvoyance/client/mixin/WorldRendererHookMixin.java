@@ -1,0 +1,33 @@
+package com.shushuwonie.clairvoyance.client.mixin;
+
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.shushuwonie.clairvoyance.client.mirror.MirrorViewportRenderer;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.ObjectAllocator;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(WorldRenderer.class)
+public class WorldRendererHookMixin {
+	@Inject(method = "render", at = @At("HEAD"))
+	private void onRenderStart(
+		ObjectAllocator allocator,
+		RenderTickCounter tickCounter,
+		boolean renderBlockOutline,
+		Camera camera,
+		Matrix4f positionMatrix,
+		Matrix4f projectionMatrix,
+		GpuBufferSlice fog,
+		Vector4f fogColor,
+		boolean shouldRenderSky,
+		CallbackInfo ci
+	) {
+		MirrorViewportRenderer.renderViewports(tickCounter, fog, fogColor);
+	}
+}

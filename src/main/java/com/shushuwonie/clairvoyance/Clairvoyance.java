@@ -5,9 +5,14 @@ import com.shushuwonie.clairvoyance.command.ClairvoyanceCommand;
 import com.shushuwonie.clairvoyance.command.GiveBodyPartCommand;
 import com.shushuwonie.clairvoyance.command.ReplaceBodyPartCommand;
 import com.shushuwonie.clairvoyance.command.WatchCommand;
+import com.shushuwonie.clairvoyance.command.MirrorCommand;
+import com.shushuwonie.clairvoyance.network.mirror.MirrorStateS2CPacket;
+import com.shushuwonie.clairvoyance.network.mirror.MirrorToggleC2SPacket;
+
 import com.shushuwonie.clairvoyance.config.GlobalConfigManager;
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
 import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
+import com.shushuwonie.clairvoyance.features.mirror_of_then_and_now;
 import com.shushuwonie.clairvoyance.features.evil_eyes.server.CameraWatchManager;
 import com.shushuwonie.clairvoyance.features.guidance.Gazeguidance;
 import com.shushuwonie.clairvoyance.item.config.GazeConfig;
@@ -222,6 +227,7 @@ public class Clairvoyance implements ModInitializer {
 		CameraWatchBindS2CPacket.register();
 		CameraWatchUnbindS2CPacket.register();
 		CameraUpdateS2CPacket.register();
+		MirrorStateS2CPacket.register();
 
 		// 注册所有 C2S 包
 		ModNetworking.registerC2SPackets();   // 注册 C2S 包
@@ -240,7 +246,11 @@ public class Clairvoyance implements ModInitializer {
 		PlaceCarriedEntityPayload.register();
 		CameraWatchStartC2SPacket.register();
 		CameraWatchStopC2SPacket.register();
+		MirrorToggleC2SPacket.register();
 
+		ServerPlayNetworking.registerGlobalReceiver(MirrorToggleC2SPacket.ID, (packet, context) -> {
+			MirrorCommand.toggleViewport(context.player());
+		});
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			GiveBodyPartCommand.register(dispatcher, registryAccess, environment);
@@ -264,6 +274,7 @@ public class Clairvoyance implements ModInitializer {
 
 		// 注册新指令
 		CommandRegistrationCallback.EVENT.register(WatchCommand::register);
+			CommandRegistrationCallback.EVENT.register(MirrorCommand::register);
 
 		// 启动 tick 事件更新相机
 		ServerTickEvents.END_SERVER_TICK.register(CameraWatchManager::tick);
@@ -316,6 +327,7 @@ public class Clairvoyance implements ModInitializer {
 		ModItems.initialize();
 		ModBlocks.initialize();   // 确保所有 static 字段被初始化
 		Assembly_ModItems.initialize();
+			mirror_of_then_and_now.initialize();
 		ModBlockEntities.initialize();
 		ModScreenHandlers.initialize();
 
