@@ -2,8 +2,8 @@ package com.shushuwonie.clairvoyance.client.renderer.head;
 
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.head.HeadModel;
-import com.shushuwonie.clairvoyance.features.block.head.HeadBlock;
-import com.shushuwonie.clairvoyance.features.block.head.HeadBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.head.HeadBlock;
+import com.shushuwonie.clairvoyance.features.block.body.head.HeadBlockEntity;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;

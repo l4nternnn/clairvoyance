@@ -1,7 +1,7 @@
-package com.shushuwonie.clairvoyance.features.block.head;
+package com.shushuwonie.clairvoyance.features.block.body.head;
 
 import com.shushuwonie.clairvoyance.entity.ModBlockEntities;
-import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.BodyPartBlockEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 

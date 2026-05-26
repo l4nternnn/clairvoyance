@@ -1,4 +1,4 @@
-package com.shushuwonie.clairvoyance.client.evil_eyes.watch;
+package com.shushuwonie.clairvoyance.client.features.evil_eyes.watch;
 
 import com.shushuwonie.clairvoyance.network.camerawatch.CameraUpdateS2CPacket;
 import com.shushuwonie.clairvoyance.network.camerawatch.CameraWatchUnbindS2CPacket;

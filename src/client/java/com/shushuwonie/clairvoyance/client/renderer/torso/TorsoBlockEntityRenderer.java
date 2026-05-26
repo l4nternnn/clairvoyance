@@ -2,8 +2,8 @@ package com.shushuwonie.clairvoyance.client.renderer.torso;
 
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.torso.TorsoModel;
-import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlock;
-import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.torso.TorsoBlock;
+import com.shushuwonie.clairvoyance.features.block.body.torso.TorsoBlockEntity;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;

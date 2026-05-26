@@ -1,5 +1,6 @@
-package com.shushuwonie.clairvoyance.client.evil_eyes.watch;
+package com.shushuwonie.clairvoyance.client.features.evil_eyes.watch;
 
+import com.shushuwonie.clairvoyance.client.features.evil_eyes.Evil_EyesClient;
 import com.shushuwonie.clairvoyance.network.camerawatch.CameraWatchStopC2SPacket;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -24,7 +25,7 @@ public class CameraWatchClientHandler {
 
     public static void onCameraUpdate(Vec3d pos, float yaw, float pitch) {
         if (!hasValidTarget) {
-            com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.exitViewMode(MinecraftClient.getInstance());
+            Evil_EyesClient.exitViewMode(MinecraftClient.getInstance());
         }
         targetPos = pos;
         targetYaw = yaw;

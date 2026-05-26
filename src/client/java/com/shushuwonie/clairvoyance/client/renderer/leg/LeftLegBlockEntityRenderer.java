@@ -2,8 +2,8 @@ package com.shushuwonie.clairvoyance.client.renderer.leg;
 
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
 import com.shushuwonie.clairvoyance.client.model.leg.LeftLegModel;
-import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlock;
-import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.leg.LeftLegBlock;
+import com.shushuwonie.clairvoyance.features.block.body.leg.LeftLegBlockEntity;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.OverlayTexture;

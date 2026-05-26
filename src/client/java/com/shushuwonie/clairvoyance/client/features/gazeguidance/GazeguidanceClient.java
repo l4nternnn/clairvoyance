@@ -1,4 +1,4 @@
-package com.shushuwonie.clairvoyance.client.gazeguidance;
+package com.shushuwonie.clairvoyance.client.features.gazeguidance;
 
 import com.shushuwonie.clairvoyance.network.gazeguidance.RightClickActionPacket;
 import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;

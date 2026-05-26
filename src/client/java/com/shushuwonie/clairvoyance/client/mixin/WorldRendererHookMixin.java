@@ -1,7 +1,7 @@
 package com.shushuwonie.clairvoyance.client.mixin;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.shushuwonie.clairvoyance.client.mirror.MirrorViewportRenderer;
+import com.shushuwonie.clairvoyance.client.features.mirror.MirrorViewportRenderer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.render.WorldRenderer;
@@ -28,6 +28,6 @@ public class WorldRendererHookMixin {
 		boolean shouldRenderSky,
 		CallbackInfo ci
 	) {
-		MirrorViewportRenderer.renderViewports(tickCounter, fog, fogColor);
+		MirrorViewportRenderer.renderViewports(tickCounter, fog, fogColor, camera);
 	}
 }

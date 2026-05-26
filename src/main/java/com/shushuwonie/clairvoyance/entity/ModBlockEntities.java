@@ -1,12 +1,12 @@
 package com.shushuwonie.clairvoyance.entity;
 
 import com.shushuwonie.clairvoyance.Clairvoyance;
-import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.leg.RightLegBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.head.HeadBlockEntity;
-import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.arm.LeftArmBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.arm.RightArmBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.leg.LeftLegBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.leg.RightLegBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.head.HeadBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.torso.TorsoBlockEntity;
 import com.shushuwonie.clairvoyance.item.modblock.ModBlocks;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.block.entity.BlockEntityType;

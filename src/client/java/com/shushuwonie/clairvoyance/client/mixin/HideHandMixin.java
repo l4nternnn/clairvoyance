@@ -1,6 +1,6 @@
 package com.shushuwonie.clairvoyance.client.mixin;
 
-import com.shushuwonie.clairvoyance.client.evil_eyes.watch.CameraWatchClientHandler;
+import com.shushuwonie.clairvoyance.client.features.evil_eyes.watch.CameraWatchClientHandler;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.render.VertexConsumerProvider;

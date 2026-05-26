@@ -1,6 +1,5 @@
-package com.shushuwonie.clairvoyance.features;
+package com.shushuwonie.clairvoyance.item.mirror;
 
-import com.shushuwonie.clairvoyance.item.mirror.MirrorOfThenAndNowItem;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;

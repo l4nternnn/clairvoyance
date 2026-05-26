@@ -1,45 +1,47 @@
-package com.shushuwonie.clairvoyance.client.mirror;
+package com.shushuwonie.clairvoyance.client.features.mirror;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.shushuwonie.clairvoyance.client.mixin.CameraAccessor;
-import com.shushuwonie.clairvoyance.client.mirror.FramebufferOverride;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.gl.SimpleFramebuffer;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.ObjectAllocator;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 import org.joml.Vector4f;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MirrorViewportRenderer {
-	private static final int VIEWPORT_WIDTH = 320;
-	private static final int VIEWPORT_HEIGHT = 180;
+	private static final int VIEWPORT_WIDTH = 1920;
+	private static final int VIEWPORT_HEIGHT = 1080;
 	private static final int PADDING = 8;
 
 	private static final AtomicBoolean renderingMirror = new AtomicBoolean(false);
 	private static final SimpleFramebuffer[] fbos = new SimpleFramebuffer[2];
 	private static boolean hasRenderedMirrors = false;
 
-	public static void renderViewports(RenderTickCounter tickCounter, GpuBufferSlice fogBuffer, Vector4f fogColor) {
+	public static void renderViewports(RenderTickCounter tickCounter, GpuBufferSlice fogBuffer, Vector4f fogColor, Camera mainCamera) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.world == null || client.player == null) return;
 		if (!MirrorClientManager.isActive()) return;
 		if (renderingMirror.getAndSet(true)) return;
 
 		try {
-			float playerYaw = client.player.getYaw();
-			float playerPitch = client.player.getPitch();
+			float camYaw = mainCamera.getYaw();
+			float camPitch = mainCamera.getPitch();
+			Vec3d originOffset = MirrorClientManager.getOriginOffset();
 
 			for (int slot = 0; slot < 2; slot++) {
 				MirrorClientManager.CameraData data = MirrorClientManager.getSlot(slot);
 				if (!data.active()) continue;
+
+
+
+				Vec3d slotPos = data.pos().add(originOffset).add(-3.6,16,-0.4);
 
 				SimpleFramebuffer fbo = getOrCreateFbo(slot);
 				FramebufferOverride.setOverride(fbo);
@@ -47,8 +49,8 @@ public class MirrorViewportRenderer {
 				try {
 					Camera mirrorCamera = new Camera();
 					CameraAccessor acc = (CameraAccessor) mirrorCamera;
-					acc.invokeSetPos(data.pos().x, data.pos().y, data.pos().z);
-					acc.invokeSetRotation(playerYaw, playerPitch);
+					acc.invokeSetPos(slotPos.x, slotPos.y, slotPos.z);
+					acc.invokeSetRotation(camYaw, camPitch);
 
 					float fovDeg = client.options.getFov().getValue().floatValue();
 					float fovRad = fovDeg * (float) (Math.PI / 180.0);
@@ -59,10 +61,15 @@ public class MirrorViewportRenderer {
 						client.gameRenderer.getFarPlaneDistance()
 					);
 
-					Quaternionf invRot = mirrorCamera.getRotation().conjugate(new Quaternionf());
-					Vec3d camPos = data.pos();
-					Matrix4f viewMatrix = new Matrix4f().rotation(invRot)
-						.translate((float)-camPos.x, (float)-camPos.y, (float)-camPos.z);
+					float yawRad = camYaw * (float)(Math.PI / 180.0);
+					float pitchRad = camPitch * (float)(Math.PI / 180.0);
+					Matrix4f viewMatrix = new Matrix4f().lookAt(
+						(float)slotPos.x, (float)slotPos.y, (float)slotPos.z,
+						(float)(slotPos.x - Math.sin(yawRad) * Math.cos(pitchRad)),
+						(float)(slotPos.y - Math.sin(pitchRad)),
+						(float)(slotPos.z + Math.cos(yawRad) * Math.cos(pitchRad)),
+						0, 1, 0
+					);
 
 					client.worldRenderer.render(
 						ObjectAllocator.TRIVIAL,

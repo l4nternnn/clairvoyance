@@ -1,11 +1,11 @@
 package com.shushuwonie.clairvoyance.item.modblock;
 
-import com.shushuwonie.clairvoyance.features.block.arm.LeftArmBlock;
-import com.shushuwonie.clairvoyance.features.block.arm.RightArmBlock;
-import com.shushuwonie.clairvoyance.features.block.leg.LeftLegBlock;
-import com.shushuwonie.clairvoyance.features.block.head.HeadBlock;
-import com.shushuwonie.clairvoyance.features.block.leg.RightLegBlock;
-import com.shushuwonie.clairvoyance.features.block.torso.TorsoBlock;
+import com.shushuwonie.clairvoyance.features.block.body.arm.LeftArmBlock;
+import com.shushuwonie.clairvoyance.features.block.body.arm.RightArmBlock;
+import com.shushuwonie.clairvoyance.features.block.body.leg.LeftLegBlock;
+import com.shushuwonie.clairvoyance.features.block.body.head.HeadBlock;
+import com.shushuwonie.clairvoyance.features.block.body.leg.RightLegBlock;
+import com.shushuwonie.clairvoyance.features.block.body.torso.TorsoBlock;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.MapColor;

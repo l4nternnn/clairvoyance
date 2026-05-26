@@ -1,4 +1,4 @@
-package com.shushuwonie.clairvoyance.client.mirror;
+package com.shushuwonie.clairvoyance.client.features.mirror;
 
 import net.minecraft.client.gl.Framebuffer;
 

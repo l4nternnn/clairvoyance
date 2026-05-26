@@ -3,8 +3,10 @@ package com.shushuwonie.clairvoyance.client;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.shushuwonie.clairvoyance.Clairvoyance;
-import com.shushuwonie.clairvoyance.client.evil_eyes.watch.CameraWatchClientHandler;
-import com.shushuwonie.clairvoyance.client.evil_eyes.watch.ClientCameraWatchReceiver;
+import com.shushuwonie.clairvoyance.client.features.evil_eyes.Evil_EyesClient;
+import com.shushuwonie.clairvoyance.client.features.evil_eyes.watch.CameraWatchClientHandler;
+import com.shushuwonie.clairvoyance.client.features.evil_eyes.watch.ClientCameraWatchReceiver;
+import com.shushuwonie.clairvoyance.client.features.gazeguidance.GazeguidanceClient;
 import com.shushuwonie.clairvoyance.client.gui.bodyback.BodyPartScreen;
 import com.shushuwonie.clairvoyance.client.gui.openback.OtherPlayerInventoryScreen;
 import com.shushuwonie.clairvoyance.client.model.ModModelLayers;
@@ -41,12 +43,12 @@ import com.shushuwonie.clairvoyance.client.gui.CombinedConfigScreen;
 import com.shushuwonie.clairvoyance.features.evil_eyes.Evil_Eyes;
 import com.shushuwonie.clairvoyance.item.config.GazeConfig;
 import com.shushuwonie.clairvoyance.item.gazeguidance.ModItems;
-import com.shushuwonie.clairvoyance.client.mirror.MirrorClientManager;
-import com.shushuwonie.clairvoyance.client.mirror.MirrorHudOverlay;
-import com.shushuwonie.clairvoyance.client.mirror.MirrorViewportRenderer;
+import com.shushuwonie.clairvoyance.client.features.mirror.MirrorClientManager;
+import com.shushuwonie.clairvoyance.client.features.mirror.MirrorHudOverlay;
+import com.shushuwonie.clairvoyance.client.features.mirror.MirrorViewportRenderer;
 import com.shushuwonie.clairvoyance.network.mirror.MirrorStateS2CPacket;
 import com.shushuwonie.clairvoyance.network.mirror.MirrorToggleC2SPacket;
-import com.shushuwonie.clairvoyance.features.mirror_of_then_and_now;
+import com.shushuwonie.clairvoyance.item.mirror.mirror_of_then_and_now;
 
 import com.shushuwonie.clairvoyance.network.openback.CarryEntityPayload;
 import com.shushuwonie.clairvoyance.network.openback.OpenOtherInventoryPayload;
@@ -97,7 +99,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.getTargetEntity;
+import static com.shushuwonie.clairvoyance.client.features.gazeguidance.GazeguidanceClient.getTargetEntity;
 
 public class ClairvoyanceClient implements ClientModInitializer {
 	private static KeyBinding configKey;
@@ -131,8 +133,8 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ModNetworking.registerS2CPackets();
 
 		// 初始化其他模块
-		com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.initialize();
-		com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
+		Evil_EyesClient.initialize();
+		GazeguidanceClient.initialize(); // 此方法内部不应再注册接收器，只保留业务初始化
 		// 按键绑定
 		configKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.config", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_U, "category.clairvoyance"));
 		markKey = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.clairvoyance.mark", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_V, "category.clairvoyance"));
@@ -249,13 +251,13 @@ public class ClairvoyanceClient implements ClientModInitializer {
 				UUID uuid = packet.entityUuid();
 				// 清空信号：同步清空本地标记和GUI列表
 				if (uuid.getMostSignificantBits() == 0 && uuid.getLeastSignificantBits() == 0) {
-					com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.clear();
-					com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+					Evil_EyesClient.localMarkedEntities.clear();
+					com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(Evil_EyesClient.localMarkedEntities);
 					return;
 				}
 				long expire = context.client().world != null ? context.client().world.getTime() + 60 : System.currentTimeMillis() / 50 + 60;
-				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities.put(uuid, expire);
-				com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.localMarkedEntities);
+				Evil_EyesClient.localMarkedEntities.put(uuid, expire);
+				com.shushuwonie.clairvoyance.client.gui.evil_eyes.Evil_eyesScreen.updateMarkedList(Evil_EyesClient.localMarkedEntities);
 			});
 		});
 
@@ -268,7 +270,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(SelectViewPayload.ID, (packet, context) -> {
 			context.client().execute(() -> {
 				CameraWatchClientHandler.onUnbind(); // 先清理现代模式
-				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.onSelectView(packet.entityUuid());
+				Evil_EyesClient.onSelectView(packet.entityUuid());
 			});
 		});
 
@@ -276,7 +278,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(ForceExitViewPayload.ID, (packet, context) -> {
 			context.client().execute(() -> {
 				CameraWatchClientHandler.onUnbind();
-				com.shushuwonie.clairvoyance.client.evil_eyes.Evil_EyesClient.exitViewMode(context.client());
+				Evil_EyesClient.exitViewMode(context.client());
 			});
 		});
 
@@ -302,12 +304,12 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 9. 能量同步
 		ClientPlayNetworking.registerGlobalReceiver(EnergySyncPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setEnergy(packet.currentEnergy(), packet.maxEnergy()));
+			context.client().execute(() -> GazeguidanceClient.setEnergy(packet.currentEnergy(), packet.maxEnergy()));
 		});
 
 		// 10. 标记数量同步
 		ClientPlayNetworking.registerGlobalReceiver(MarkCountPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setMarkCount(packet.count()));
+			context.client().execute(() -> GazeguidanceClient.setMarkCount(packet.count()));
 		});
 
 		// 11. 粒子效果（静态点）
@@ -324,7 +326,7 @@ public class ClairvoyanceClient implements ClientModInitializer {
 
 		// 12. 强度阶段同步
 		ClientPlayNetworking.registerGlobalReceiver(StrengthPacket.ID, (packet, context) -> {
-			context.client().execute(() -> com.shushuwonie.clairvoyance.client.gazeguidance.GazeguidanceClient.setStrength(packet.stage(), packet.maxMarks()));
+			context.client().execute(() -> GazeguidanceClient.setStrength(packet.stage(), packet.maxMarks()));
 		});
 
 		// 13. 锚点粒子接收（同时缓存位置）

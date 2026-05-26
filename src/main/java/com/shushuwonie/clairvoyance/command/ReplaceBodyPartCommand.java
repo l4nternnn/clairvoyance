@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.shushuwonie.clairvoyance.Clairvoyance;
+import com.shushuwonie.clairvoyance.features.block.body.BodyPartManager;
 import com.shushuwonie.clairvoyance.item.modblock.moditems.Assembly_ModItems;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
@@ -150,7 +150,7 @@ public class ReplaceBodyPartCommand {
 
     private static int splitCombined(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
-        int count = Clairvoyance.splitCombinedBody(player);
+        int count = BodyPartManager.splitCombinedBody(player);
         ctx.getSource().sendFeedback(() -> Text.literal("已将 " + count + " 个整体肢体分离为单独肢体"), true);
         return count;
     }

@@ -1,7 +1,7 @@
-package com.shushuwonie.clairvoyance.features.block.head;
+package com.shushuwonie.clairvoyance.features.block.body.leg;
 
 import com.mojang.serialization.MapCodec;
-import com.shushuwonie.clairvoyance.features.block.BodyPartBlockEntity;
+import com.shushuwonie.clairvoyance.features.block.body.BodyPartBlockEntity;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.component.DataComponentTypes;
@@ -18,7 +18,6 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -28,29 +27,18 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
-public class HeadBlock extends BlockWithEntity {
+public class RightLegBlock extends BlockWithEntity {
     public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
-    private static final VoxelShape SHAPE = VoxelShapes.cuboid(0.25, 0, 0.25, 0.75, 0.5, 0.75);
+    private static final VoxelShape SHAPE = VoxelShapes.cuboid(0.25, 0, 0.25, 0.75, 0.75, 0.75);
 
-    public HeadBlock(Settings settings) {
+    public RightLegBlock(Settings settings) {
         super(settings);
         this.setDefaultState(this.stateManager.getDefaultState().with(FACING, Direction.NORTH));
     }
 
     @Override
     protected MapCodec<? extends BlockWithEntity> getCodec() {
-        return createCodec(HeadBlock::new);
-    }
-
-    @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (!world.isClient) {
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof BodyPartBlockEntity bodyPart) {
-                player.openHandledScreen(bodyPart);
-            }
-        }
-        return ActionResult.SUCCESS;
+        return createCodec(RightLegBlock::new);
     }
 
     @Override
@@ -86,27 +74,46 @@ public class HeadBlock extends BlockWithEntity {
     @Nullable
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new HeadBlockEntity(pos, state);
+        return new RightLegBlockEntity(pos, state);
     }
 
     @Override
     public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
         super.onPlaced(world, pos, state, placer, itemStack);
-        if (world.getBlockEntity(pos) instanceof HeadBlockEntity headEntity) {
+        if (world.getBlockEntity(pos) instanceof RightLegBlockEntity legEntity) {
             ProfileComponent itemProfile = itemStack.get(DataComponentTypes.PROFILE);
             if (itemProfile != null) {
-                headEntity.setOwner(itemProfile);
+                legEntity.setOwner(itemProfile);
             } else if (placer instanceof PlayerEntity player) {
-                headEntity.setOwner(new ProfileComponent(player.getGameProfile()));
+                legEntity.setOwner(new ProfileComponent(player.getGameProfile()));
             }
+            // 读取物品栈中的手臂模型覆盖标记
             NbtComponent customData = itemStack.get(DataComponentTypes.CUSTOM_DATA);
             if (customData != null) {
                 NbtCompound nbt = customData.copyNbt();
-                if (nbt.contains("local_skin")) {
-                    nbt.getString("local_skin").ifPresent(headEntity::setLocalSkin);
-                }
+                if (nbt.contains("arm_model")) {
+                    nbt.getString("arm_model").ifPresent(legEntity::setSkinType);
+				}
+				if (nbt.contains("local_skin")) {
+					nbt.getString("local_skin").ifPresent(legEntity::setLocalSkin);
+				}
             }
-            headEntity.markDirty();
+            legEntity.markDirty();
         }
     }
+
+
+    @Override
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+
+        if (!world.isClient) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof BodyPartBlockEntity bodyPart) {
+                player.openHandledScreen(bodyPart);
+            }
+        }
+        return ActionResult.SUCCESS;
+    }
+
+
 }
